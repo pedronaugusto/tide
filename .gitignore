@@ -1,0 +1,7 @@
+# Build output, and the packages `zig fetch` drops beside the project.
+.zig-cache/
+zig-out/
+zig-pkg/
+
+# macOS.
+.DS_Store
