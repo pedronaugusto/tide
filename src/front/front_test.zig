@@ -1,42 +1,26 @@
-//! A calendar written in `.river`, compiled with tide's pass, loaded and
-//! advanced: what a game's build and its run do with tide.
+//! A calendar written in `.river`, checked and compiled with tide registered
+//! as a game's vocabulary registers it, loaded and advanced: what a game's
+//! build and its run do with tide.
 
 const std = @import("std");
 const riverrun = @import("riverrun-compiler");
 const runtime = @import("riverrun");
 const tide = @import("tide");
 const vocabulary = @import("vocabulary.zig");
-const pass = @import("pass.zig");
 
 const gpa = std.testing.allocator;
 const check = riverrun.check;
 
-const keys = vocabulary.schedule(&.{ "slot", "weekday" }, &.{"day"});
-const schema: check.Schema = .{ .keys = &keys };
-pub const options: check.Options = .{ .schema = &schema, .kinds = &.{vocabulary.kind} };
+/// A vocabulary with tide registered and nothing of a game's own.
+const Vocabulary = struct {
+    pub const options: check.Options = .{};
+    pub const packages: []const riverrun.Package = &.{vocabulary.package};
+};
+const joined = riverrun.join(Vocabulary);
 
 /// A school year as Persona keeps one: four slots a day, a seven-day week, a deadline, and a friend who asks on
 /// Sunday evenings.
-pub const school =
-    \\cast:
-    \\  ryuji  "Ryuji"
-    \\facts (time):
-    \\  turn:      int   (clock)
-    \\  day:       int   (game)
-    \\  slot:      one of morning, noon, afternoon, evening   (game)
-    \\  weekday:   one of monday, tuesday, wednesday, thursday, friday, saturday, sunday   (game)
-    \\  days_left: int   (game)
-    \\
-    \\== school (calendar)                      # clock turn
-    \\= slot        # size 1 · place slot
-    \\= day         # size 4 · count day
-    \\= week        # cycle day · length 7 · place weekday
-    \\= days_left   # until · day 34 · per day
-    \\
-    \\== ramen                                  # every week · weekday sunday · slot evening · times 5
-    \\{ weekday = sunday and slot = evening } RYUJI: yo. ramen?
-    \\-> end
-;
+pub const school = @embedFile("testdata/school.river");
 
 pub const Built = struct {
     arena: std.heap.ArenaAllocator,
@@ -50,24 +34,40 @@ pub const Built = struct {
         b.diags.deinit(gpa);
         b.arena.deinit();
     }
+
+    /// The one error there is, which must be this one.
+    fn only(b: *const Built, line: u32, col: u32, message: []const u8) !void {
+        if (b.diags.errors() != 1) for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ d.span.line, d.span.col, d.message });
+        try std.testing.expectEqual(@as(usize, 1), b.diags.errors());
+        for (b.diags.list.items) |d| if (d.severity == .err) {
+            try std.testing.expectEqualStrings(message, d.message);
+            try std.testing.expectEqual(line, d.span.line);
+            try std.testing.expectEqual(col, d.span.col);
+        };
+        try std.testing.expect(b.compiled == null);
+    }
 };
 
-/// Reads, checks (riverrun's checker, then tide's) and, when nothing is wrong, compiles `text`.
-pub fn build(text: []const u8, with: check.Options) !Built {
+/// Reads, checks (riverrun's checker, tide's within it) and, when nothing is wrong, compiles `text`.
+pub fn build(text: []const u8) !Built {
     var b: Built = .{ .arena = .init(gpa), .diags = .{} };
     errdefer b.deinit();
     const tree = try b.arena.allocator().create(riverrun.syntax.ast.File);
     tree.* = try riverrun.syntax.parse(b.arena.allocator(), gpa, &b.diags, 0, "school.river", text);
-    b.checked = try check.run(gpa, &b.diags, tree[0..1], with);
-    try pass.check(gpa, &b.diags, &b.checked.?);
-    if (b.diags.errors() == 0) b.compiled = try riverrun.compile.run(gpa, &b.diags, &b.checked.?, .{ .passes = &.{pass.pass} });
+    b.checked = try check.run(gpa, &b.diags, tree[0..1], joined.options);
+    if (b.diags.errors() == 0) b.compiled = try riverrun.compile.run(gpa, &b.diags, &b.checked.?, .{ .passes = joined.passes });
     return b;
 }
 
+fn replaced(text: []const u8, from: []const u8, to: []const u8) ![]u8 {
+    try std.testing.expect(std.mem.find(u8, text, from) != null);
+    return std.mem.replaceOwned(u8, gpa, text, from, to);
+}
+
 test "a calendar in the story is compiled, loaded and kept: Sunday evening comes, and Ryuji asks" {
-    var b = try build(school, options);
+    var b = try build(school);
     defer b.deinit();
-    for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ d.span.line, d.span.col, d.message });
+    for (b.diags.list.items) |d| if (d.severity == .err) std.debug.print("{d}:{d}: {s}\n", .{ d.span.line, d.span.col, d.message });
     try std.testing.expectEqual(@as(usize, 0), b.diags.errors());
     const s: runtime.story.Story = try .init(b.compiled.?.graph, .{});
     const words: runtime.story.Strings = try .init(b.compiled.?.words, .{});
@@ -79,9 +79,11 @@ test "a calendar in the story is compiled, loaded and kept: Sunday evening comes
     defer t.deinit();
     try t.sync();
     const turn = t.clockNamed("turn").?;
+    // the calendar's own facts, in the scope it names
     const weekday = s.factNamed("weekday").?;
     const slot = s.factNamed("slot").?;
     const days_left = s.factNamed("days_left").?;
+    try std.testing.expectEqualStrings("time", s.scope(s.fact(weekday).scope));
     try std.testing.expectEqual(@as(u16, 0), memory.get(weekday).one_of);
     try std.testing.expectEqual(@as(i64, 34), memory.get(days_left).int);
 
@@ -110,40 +112,81 @@ test "a calendar in the story is compiled, loaded and kept: Sunday evening comes
     try std.testing.expectEqual(@as(usize, 5), total);
 }
 
-test "a day misnamed in a schedule is refused where it is written" {
-    const typo = std.mem.replaceOwned(u8, gpa, school, "weekday sunday", "weekday sundy") catch unreachable;
-    defer gpa.free(typo);
-    var b = try build(typo, options);
-    defer b.deinit();
-    try std.testing.expectEqual(@as(usize, 1), b.diags.errors());
-    const d = b.diags.list.items[0];
-    try std.testing.expectEqual(@as(u32, 16), d.span.line);
-    try std.testing.expectEqual(@as(u32, 59), d.span.col);
-    try std.testing.expect(std.mem.find(u8, d.message, "sundy") != null);
-    try std.testing.expect(b.compiled == null);
-}
-
-test "what does not hold together in a calendar is said at its place" {
+test "a time misnamed is refused by tide's judge, where it is written" {
     const cases = .{
-        .{ "# clock turn", "# clock day", 10, "`day` is not a `(clock)` fact" },
-        .{ "= day         # size 4 · count day", "= day         # size 5 · count day", 10, "the calendar does not hold together: a place fact's values do not number the places of the next unit" },
-        .{ "# cycle day ·", "# cycle month ·", 13, "`month` is not a unit of this calendar" },
-        .{ "# every week ·", "# every fortnight ·", 16, "`fortnight` is not a unit or a cycle of this calendar" },
+        .{ "at sunday evening", "at sundy evening", 14, 59, "`sundy` is not a place or a count of `school`" },
+        .{ "at sunday evening", "at weekday evening", 14, 59, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
+        .{ "until day 34", "until day", 12, 17, "`day` takes its count: `day 34`" },
+        .{ "# every week ·", "# every fortnight ·", 14, 45, "`fortnight` is not a unit or a cycle of this calendar" },
+        .{ "# cycle day ·", "# cycle month ·", 11, 17, "`month` is not a unit of this calendar" },
+        .{ "# clock turn", "# clock day", 8, 45, "`day` is not a `(clock)` fact" },
     };
     inline for (cases) |c| {
-        const text = try std.mem.replaceOwned(u8, gpa, school, c[0], c[1]);
+        const text = try replaced(school, c[0], c[1]);
         defer gpa.free(text);
-        var b = try build(text, options);
+        var b = try build(text);
         defer b.deinit();
-        if (b.diags.errors() != 1) for (b.diags.list.items) |d| std.debug.print("{s}: {d}:{d}: {s}\n", .{ c[1], d.span.line, d.span.col, d.message });
-        try std.testing.expectEqual(@as(usize, 1), b.diags.errors());
-        try std.testing.expectEqual(@as(u32, c[2]), b.diags.list.items[0].span.line);
-        try std.testing.expectEqualStrings(c[3], b.diags.list.items[0].message);
+        try b.only(c[2], c[3], c[4]);
     }
 }
 
+test "what only the whole calendar shows is said by tide's check, at its place" {
+    const cases = .{
+        .{ "= day         # size 4", "= day         # size 5", 8, 4, "the calendar does not hold together: a unit's names are not one for each of its places in the next unit, or a cycle's for each of its length" },
+        .{ "= week        # cycle day · place", "= week        # cycle day · offset 9 · place", 8, 4, "the calendar does not hold together: a cycle is of length zero, or starts past its end" },
+        .{ "= days_left   # until day 34", "= days_left   # per day", 12, 3, "a calendar's part is a unit (`size`), a cycle (`cycle`) or a time fact it keeps (`until`, `since`, `drift`)" },
+    };
+    inline for (cases) |c| {
+        const text = try replaced(school, c[0], c[1]);
+        defer gpa.free(text);
+        var b = try build(text);
+        defer b.deinit();
+        try b.only(c[2], c[3], c[4]);
+    }
+}
+
+test "a fact the calendar keeps is never the story's too" {
+    const text = try replaced(school, "  turn:  int   (clock)", "  turn:  int   (clock)\n  weekday: int   (game)");
+    defer gpa.free(text);
+    var b = try build(text);
+    defer b.deinit();
+    try std.testing.expectEqualStrings("`weekday` is declared twice: first at school.river:7:3, then by the calendar `school`", b.diags.list.items[0].message);
+    try std.testing.expectEqual(@as(u32, 12), b.diags.list.items[0].span.line);
+}
+
+test "a schedule needs a calendar to mean" {
+    var none = try build("== bus   # at day 3\n-> end\n");
+    defer none.deinit();
+    try none.only(1, 4, "a schedule needs a calendar: the story declares none");
+}
+
+test "a place without names is a number, kept in an int" {
+    var b = try build(
+        \\facts:
+        \\  minutes: int   (clock)
+        \\== clock (calendar)   # clock minutes
+        \\= hour   # size 60 · place hour
+        \\= day    # size 24 · count day
+        \\== late
+        \\{ hour >= 22 } It is late.
+        \\-> end
+    );
+    defer b.deinit();
+    try std.testing.expectEqual(@as(usize, 0), b.diags.errors());
+    const s: runtime.story.Story = try .init(b.compiled.?.graph, .{});
+    var arena: std.heap.ArenaAllocator = .init(gpa);
+    defer arena.deinit();
+    var memory: runtime.facts.Memory = try .init(gpa, try s.schema(arena.allocator()));
+    defer memory.deinit();
+    var t = try tide.fromStory(gpa, &s, memory.store(), .{});
+    defer t.deinit();
+    var due: [1]tide.Due = undefined;
+    _ = try t.advance(t.clockNamed("minutes").?, 23 * 60, &due);
+    try std.testing.expectEqual(@as(i64, 23), memory.get(s.factNamed("hour").?).int);
+}
+
 test "a story without its block, or with a damaged one, is refused before anything is kept" {
-    var b = try build(school, options);
+    var b = try build(school);
     defer b.deinit();
     const graph = b.compiled.?.graph;
     const s: runtime.story.Story = try .init(graph, .{});
@@ -155,7 +198,7 @@ test "a story without its block, or with a damaged one, is refused before anythi
     const blk = s.block(tide.block.name).?;
     for (0..blk.bytes.len) |n| try std.testing.expectError(error.Malformed, tide.block.read(arena.allocator(), blk.bytes[0..n]));
     // a story that declares no time has no block
-    var other = try build("== a\n-> end\n", options);
+    var other = try build("== a\n-> end\n");
     defer other.deinit();
     const without: runtime.story.Story = try .init(other.compiled.?.graph, .{});
     try std.testing.expectError(error.NoTime, tide.fromStory(gpa, &without, null, .{}));

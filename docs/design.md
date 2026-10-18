@@ -3,7 +3,7 @@
 tide keeps a game's time: its clocks, its calendar, and what is scheduled to happen when. It writes time as
 riverrun facts, so dialogue, quests and the world read one time without knowing tide. It knows no engine and no
 game. This page is the design it is built to; the core is built (clocks, calendars, derived facts, schedules,
-snapshots), and the `.river` front end below comes with riverrun's registered kinds.
+snapshots), and so is the `.river` front end below, on riverrun's packages.
 
 ## What it owns
 
@@ -97,49 +97,55 @@ both, a fact the story reads and a value the snapshot keeps, and a restore write
 
 ## In the story
 
-tide adds vocabulary to `.river`, never grammar, as cairn does. The calendar is a section of kind `calendar`; its
-parts are its units, its cycles and the time facts it keeps; a schedule is tags on any section, part or pool
-candidate. The facts are the story's own declarations, so the writer declares them once and tide reads their
-names and values from there.
+tide adds vocabulary to `.river`, never grammar, as cairn does: one `riverrun.Package`, `tide.package`, which a
+game's vocabulary lists. The calendar is a section of kind `calendar`; its parts are its units, its cycles and the
+time facts it keeps; a schedule is tags on any section, or on a part of a scene or a registered kind. The calendar
+declares the facts it keeps, so the story reads them and never declares them.
 
 ```
 facts (time):
-  turn:      int   (clock)
-  day:       int   (game)
-  slot:      one of morning, noon, afternoon, evening   (game)
-  weekday:   one of monday, tuesday, wednesday, thursday, friday, saturday, sunday   (game)
-  days_left: int   (game)
+  turn:  int   (clock)
 
-== school (calendar)          # clock turn
-= slot        # size 1 · place slot
+== school (calendar)          # clock turn · scope time
+= slot        # size 1 · place slot · names morning, noon, afternoon, evening
 = day         # size 4 · count day
-= week        # cycle day · length 7 · place weekday
-= days_left   # until · day 34 · per day
+= week        # cycle day · place weekday · names monday, tuesday, wednesday, thursday, friday, saturday, sunday
+= days_left   # until day 34 · per day
 
-== ramen                      # every week · weekday sunday · slot evening · times 5
+== ramen                      # every week · at sunday evening · times 5
 { weekday = sunday and slot = evening } RYUJI: yo. ramen?
 ```
 
-- **A calendar** (`# clock`, `# start`) reads a `(clock)` fact. A unit part has a `size` (in the unit before,
-  ticks for the first; several sizes repeat in turn), and may name the `one of` fact that holds its place in the
-  next unit (`place`), whose values name the places, and the int fact that counts it (`count`). A cycle part goes
-  round a unit (`cycle day · length 7 · offset`), its place in a `one of` too.
+- **A calendar** (`# clock`, `# start`, `# scope`) reads a `(clock)` fact the story declares. A unit part has a
+  `size` (in the unit before, ticks for the first; several sizes repeat in turn), and may name the fact that holds
+  its place in the next unit (`place`), with the `names` of its places, and the int fact that counts it
+  (`count`). A cycle part goes round a unit (`cycle day · length 7 · offset`), its place a fact too; its `length`
+  may be left to its `names`.
+- **The calendar's facts are its own declarations** (riverrun's `Kind.declare`), the game's to write and tide's to
+  keep, in the scope `scope` names: a place is a `one of` its names, or an int where it has none; a count and a
+  time fact are ints. A story that declares one of them too is refused with both places.
 - **Time facts** are parts named by their int fact: `until` or `since` an instant, counted `per` a unit or a
   number of ticks, or `drift` against another clock, `per` a unit of fixed size.
-- **An instant** is written in the calendar's own facts: a count (`day 34`) and places (`weekday sunday`, `slot
-  evening`), the first tick at or after the count's start where every place holds. A schedule is one instant
-  (`at`) or a recurrence (`every` a unit or cycle, `interval`, `times`, `policy each|once`); `calendar name` says
-  which where a story has several, else the calendar whose facts its tags name.
-- **Checked by riverrun's checker.** The schedule's tags are keyed by the calendar's facts, so `weekday sundy`
-  fails as `values_of weekday` with its file and line; a game names those facts when it builds its vocabulary,
-  `tide.schedule(places, counts)`, beside `tide.kind` and `tide.pass`. What riverrun's schema cannot type
-  (a unit a cycle names, a calendar that does not hold together) is tide's `check`, which a tool runs between
-  checking and compiling; the compile pass refuses the same problems without a place.
+- **An instant** is words in the calendar's own facts: a count (`day 34`) and places, each a place fact and its
+  value (`weekday sunday`) or a place's name alone where no other place takes it (`sunday evening`); the first
+  tick at or after the count's start where every place holds. A schedule is one instant (`at`) or a recurrence
+  (`every` a unit or cycle, from `at` where it is given, `interval`, `times`, `policy each|once`); `calendar name`
+  says which where a story has several, else the calendar its `at` names.
+- **Checked inside riverrun's check.** Each of tide's tags is judged where it stands (`Schema.Value.judge`): an
+  instant against its calendar, `every` and `cycle` against its units, `clock` and `drift` against the story's
+  `(clock)` facts, so `at sundy evening` fails with its file and line. What only the whole shows (a calendar that
+  does not hold together, a time it never reaches, a schedule with no calendar to mean) is tide's check, a pass of
+  riverrun's checker. Both report through riverrun's diagnostics, so `addStory` prints them as riverrun's own; the
+  compile pass meets none of them, and would refuse the story where it is written if it did.
 - **No builtins:** a clock is a `(clock)` fact, so `since()` and comparisons are riverrun's and cairn's own.
 
 **Why parts, not tags of the section, and not a `(time)` section:** a calendar's units, cycles and time facts each
 have a name and their own few tags, which is what a part is; the time facts are counted in the calendar's units,
 so they belong to it; and a section of its own would declare a second place where time is written.
+
+**Why the calendar declares its facts:** a slot's names, a week's days and a unit's count are the calendar's
+shape, so they are written once, beside it, and every condition that names them is held to them. A schedule's keys
+are then tide's alone, a fixed list, never a list of the game's fact names its vocabulary must repeat.
 
 **The block.** tide's compile pass works out every instant from the calendar while the story builds and writes
 the result as tide's block (version 1) in the compiled story: the clocks, the calendars with their units and

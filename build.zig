@@ -49,18 +49,8 @@ pub fn dev(b: *std.Build, tools: type) void {
     const test_step = b.step("test", "Run the tests");
     const runtime_tests = b.addTest(.{ .name = "tide-tests", .filters = filters, .root_module = package.module("tide") });
     test_step.dependOn(&b.addRunArtifact(runtime_tests).step);
-    const front = compiler(package) orelse return;
-    const front_tests = b.addTest(.{ .name = "tide-compiler-tests", .filters = filters, .root_module = front });
+    const front_tests = b.addTest(.{ .name = "tide-compiler-tests", .filters = filters, .root_module = compiler(package) orelse return });
     test_step.dependOn(&b.addRunArtifact(front_tests).step);
-    // the vocabulary a game would give addStory, on the riverrun compiler tide's compiler side stands on
-    const vocabulary = b.createModule(.{
-        .root_source_file = package.path("tools/vocabulary.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{ .{ .name = "riverrun-compiler", .module = front.import_table.get("riverrun-compiler").? }, .{ .name = "tide-compiler", .module = front } },
-    });
-    const vocabulary_tests = b.addTest(.{ .name = "tide-vocabulary-tests", .filters = filters, .root_module = vocabulary });
-    test_step.dependOn(&b.addRunArtifact(vocabulary_tests).step);
     tools.preflight.addCi(b, package.builder, .{ .tests = test_step });
 }
 

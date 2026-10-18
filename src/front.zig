@@ -1,20 +1,23 @@
-//! tide's compiler side: what it adds to a story's language and its build.
-//! A game's vocabulary registers `kind`, adds `schedule(…)` to its schema and
-//! `pass` to its passes; a tool that checks stories also runs `check`. Only a
-//! build needs this; at run time `tide.fromStory` reads what `pass` wrote.
+//! tide's compiler side: what it adds to a story's language and its build,
+//! registered as one package. A game's vocabulary lists `package`, and its
+//! build hands this module to `addStory` from tide's `compiler`; the
+//! calendar's facts, tide's judges, its check and its pass come with it.
+//! Only a build needs this; at run time `tide.fromStory` reads what the pass
+//! wrote.
 
 const vocabulary = @import("front/vocabulary.zig");
-const pass_ = @import("front/pass.zig");
 
+/// What a vocabulary registers: `pub const packages = &.{tide.package}`.
+pub const package = vocabulary.package;
+/// The `calendar` kind and the schedule's tags, for a vocabulary that composes its own package from tide's.
 pub const kind = vocabulary.kind;
-pub const schedule = vocabulary.schedule;
-pub const pass = pass_.pass;
-pub const check = pass_.check;
+pub const keys = vocabulary.keys;
+/// A checked story's time, as tide's pass reads it, for tools.
 pub const read = @import("front/read.zig");
 
 test {
     _ = vocabulary;
-    _ = pass_;
     _ = read;
+    _ = @import("front/written.zig");
     _ = @import("front/front_test.zig");
 }

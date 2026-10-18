@@ -63,7 +63,11 @@ fn take(t: *Tide, s: *const story.Story, p: block.Schedule) Error!void {
     _ = try t.every(clock, .{ .first = p.first, .every = every, .times = p.times, .policy = p.policy }, p.section);
 }
 
-const Want = enum { int, enumeration };
+const Want = enum {
+    int,
+    /// A place: a `one of` where it has names, an int where its places are numbers.
+    place,
+};
 
 fn factOf(s: *const story.Story, raw: u16, want: Want) Error!facts.FactId {
     if (raw >= s.len(.facts)) return error.NotThisStory;
@@ -71,7 +75,7 @@ fn factOf(s: *const story.Story, raw: u16, want: Want) Error!facts.FactId {
     const d = s.fact(id);
     const ok = switch (want) {
         .int => d.kind == .int,
-        .enumeration => d.kind == .one_of and d.enumeration != null,
+        .place => d.kind == .int or (d.kind == .one_of and d.enumeration != null),
     };
     if (!ok) return error.NotThisStory;
     return id;
@@ -82,9 +86,10 @@ fn optional(s: *const story.Story, raw: u16, want: Want) Error!?facts.FactId {
     return try factOf(s, raw, want);
 }
 
-// The values of a `one of`, which name a unit's or a cycle's places.
+// The values of a `one of`, which name a unit's or a cycle's places; none where the places are numbers.
 fn names(a: std.mem.Allocator, s: *const story.Story, place: ?facts.FactId) Error![]const []const u8 {
     const id = place orelse return &.{};
+    if (s.fact(id).kind == .int) return &.{};
     const r = s.items(s.fact(id).enumeration.?);
     const out = try a.alloc([]const u8, r.len);
     for (out, 0..) |*n, k| n.* = s.item(r.start + @as(u32, @intCast(k))); // safe: an enumeration's few values
@@ -108,7 +113,7 @@ fn calendars(a: std.mem.Allocator, s: *const story.Story, plan: block.Plan) Erro
         const counts = try a.alloc(?facts.FactId, p.units.len);
         const places = try a.alloc(?facts.FactId, p.units.len);
         for (units, counts, places, p.units) |*u, *count, *place, pu| {
-            place.* = try optional(s, pu.place, .enumeration);
+            place.* = try optional(s, pu.place, .place);
             count.* = try optional(s, pu.count, .int);
             u.* = .{ .name = pu.name, .size = switch (pu.size) {
                 .fixed => |n| .{ .fixed = n },
@@ -118,7 +123,7 @@ fn calendars(a: std.mem.Allocator, s: *const story.Story, plan: block.Plan) Erro
         const cycles = try a.alloc(calendar.Cycle, p.cycles.len);
         const cycle_places = try a.alloc(?facts.FactId, p.cycles.len);
         for (cycles, cycle_places, p.cycles) |*y, *place, py| {
-            place.* = try optional(s, py.place, .enumeration);
+            place.* = try optional(s, py.place, .place);
             y.* = .{ .name = py.name, .unit = py.unit, .length = py.length, .offset = py.offset, .names = try names(a, s, place.*) };
         }
         c.* = .{

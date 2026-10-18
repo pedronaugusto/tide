@@ -1,22 +1,26 @@
-//! What tide adds to a story's language: the `calendar` kind of section, and
-//! the tags that put a section on the calendar. No grammar: a calendar is a
-//! section whose parts are its units, its cycles and the time facts it keeps,
-//! and a schedule is tags on any section, part or pool candidate.
+//! What tide adds to a story's language: the `calendar` kind of section,
+//! the tags that put a section on the calendar, and its check and pass,
+//! registered as one package. No grammar: a calendar is a section whose
+//! parts are its units, its cycles and the time facts it keeps, and a
+//! schedule is tags on any section, part or pool candidate.
 //!
-//!     == school (calendar)                    # clock turn
-//!     = slot       # size 1 · place slot
+//!     == school (calendar)                    # clock turn · scope time
+//!     = slot       # size 1 · place slot · names morning, noon, afternoon, evening
 //!     = day        # size 4 · count day
-//!     = week       # cycle day · length 7 · place weekday
-//!     = days_left  # until · day 34 · per day
+//!     = week       # cycle day · place weekday · names monday, tuesday, wednesday, thursday, friday, saturday, sunday
+//!     = days_left  # until day 34 · per day
 //!
-//!     == ramen                                # every week · weekday sunday · slot evening · times 5
+//!     == ramen                                # every week · at sunday evening · times 5
 //!
-//! The tags that name a time (`weekday sunday`, `slot evening`, `day 34`)
-//! are keyed by the calendar's own facts, so the checker holds `sunday` to
-//! the values of `weekday` and a typo fails with its file and line. A game
-//! names those facts when it builds its vocabulary: `schedule(places, counts)`.
+//! The calendar declares the facts it keeps (`slot`, `day`, `weekday`,
+//! `days_left`), which the story reads and never declares. A time is
+//! written in them (`at sunday evening`, `until day 34`), and tide's judges
+//! hold it to the calendar, so a typo fails with its file and line.
 
 const riverrun = @import("riverrun-compiler");
+const declare = @import("declare.zig");
+const judge = @import("judge.zig");
+const pass = @import("pass.zig");
 
 const Schema = riverrun.check.Schema;
 const Key = Schema.Key;
@@ -27,43 +31,47 @@ const anywhere: Schema.Places = .{ .section = true, .part = true };
 
 const calendar_schema: Schema = .{
     .keys = &.{
-        // the calendar: the `(clock)` fact it reads, and where the clock's zero falls in it
-        .{ .name = "clock", .on = section, .value = .word },
+        // the calendar: the `(clock)` fact it reads, where the clock's zero falls in it, and the scope its facts keep
+        .{ .name = "clock", .on = section, .value = .{ .judge = judge.clock } },
         .{ .name = "start", .on = section, .value = .number },
+        .{ .name = "scope", .on = section, .value = .word },
         // a unit: its size in the unit before (ticks for the first), several for sizes that repeat in turn
         .{ .name = "size", .on = part, .value = .number, .count = .many },
+        // the fact that keeps a unit's place in the next, or a cycle's, and the names of its places
         .{ .name = "place", .on = part, .value = .word },
+        .{ .name = "names", .on = part, .value = .word, .count = .many },
+        // the fact that counts a unit
         .{ .name = "count", .on = part, .value = .word },
         // a cycle round a unit: a week of days
-        .{ .name = "cycle", .on = part, .value = .word },
+        .{ .name = "cycle", .on = part, .value = .{ .judge = judge.cycle } },
         .{ .name = "length", .on = part, .value = .number },
         .{ .name = "offset", .on = part, .value = .number },
         // a time fact the calendar keeps, named by the part: until or since an instant, or one clock's drift
-        .{ .name = "until", .on = part },
-        .{ .name = "since", .on = part },
-        .{ .name = "drift", .on = part, .value = .word },
-        .{ .name = "per", .on = part, .value = .word },
+        .{ .name = "until", .on = part, .value = .{ .judge = judge.instant }, .count = .many },
+        .{ .name = "since", .on = part, .value = .{ .judge = judge.instant }, .count = .many },
+        .{ .name = "drift", .on = part, .value = .{ .judge = judge.clock } },
+        .{ .name = "per", .on = part, .value = .{ .judge = judge.per } },
     },
 };
 
-/// The kind of section tide registers.
-pub const kind: riverrun.check.Kind = .{ .name = "calendar", .schema = &calendar_schema };
+/// The kind of section tide registers, which declares the facts its calendar keeps.
+pub const kind: riverrun.check.Kind = .{ .name = "calendar", .schema = &calendar_schema, .declare = declare.declare };
 
-/// The keys of a schedule and of an instant, for the game's own schema: `at` or `every`, `times`, `policy`,
-/// `interval`, `calendar` where a story has several, and one key for each calendar fact that names a time,
-/// `places` (its `one of` facts: `weekday`, `slot`) and `counts` (its int facts: `day`).
-pub fn schedule(comptime places: []const []const u8, comptime counts: []const []const u8) [6 + places.len + counts.len]Key {
-    const fixed = [6]Key{
-        .{ .name = "at", .on = anywhere },
-        .{ .name = "every", .on = anywhere, .value = .word },
-        .{ .name = "interval", .on = anywhere, .value = .number },
-        .{ .name = "times", .on = anywhere, .value = .number },
-        .{ .name = "policy", .on = anywhere, .value = .{ .words = &.{ "each", "once" } } },
-        .{ .name = "calendar", .on = anywhere, .value = .section },
-    };
-    var keys: [6 + places.len + counts.len]Key = undefined;
-    @memcpy(keys[0..6], &fixed);
-    for (places, 0..) |p, i| keys[6 + i] = .{ .name = p, .on = anywhere, .value = .{ .values_of = p } };
-    for (counts, 0..) |c, i| keys[6 + places.len + i] = .{ .name = c, .on = anywhere, .value = .number };
-    return keys;
-}
+/// A schedule's tags, on any section or part: one time (`at`) or a recurrence (`every`, from `at` where it is
+/// given), how many times, what a jump does with the times it passes, and the calendar where a story has several.
+pub const keys = [_]Key{
+    .{ .name = "at", .on = anywhere, .value = .{ .judge = judge.at }, .count = .many },
+    .{ .name = "every", .on = anywhere, .value = .{ .judge = judge.every } },
+    .{ .name = "interval", .on = anywhere, .value = .number },
+    .{ .name = "times", .on = anywhere, .value = .number },
+    .{ .name = "policy", .on = anywhere, .value = .{ .words = &.{ "each", "once" } } },
+    .{ .name = "calendar", .on = anywhere, .value = .{ .judge = judge.calendar } },
+};
+
+/// What a game's vocabulary registers: `pub const packages = &.{tide.package}`.
+pub const package: riverrun.Package = .{
+    .kinds = &.{kind},
+    .keys = &keys,
+    .check = .{ .run = pass.check },
+    .compile = .{ .name = "tide", .run = pass.compile },
+};

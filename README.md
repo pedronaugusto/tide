@@ -10,7 +10,8 @@ tide keeps a game's time: its clocks, its calendars and what is scheduled, as ri
 - Instants and recurrences on a heap per clock, due in a fixed order; a jump's missed occurrences come due each or
   once, by the schedule's policy; nothing allocates after setup.
 - Snapshots that restore a moment exactly, an earlier one included, matched by name.
-- Calendars and schedules written in a story's `.river` files: the `calendar` kind of section and the schedule
-  tags, checked against the calendar's own facts, compiled into tide's block and loaded with `tide.fromStory`.
+- Calendars and schedules written in a story's `.river` files, registered with a story's build as one package,
+  `tide.package`: the `calendar` kind of section, which declares the facts it keeps, and the schedule tags, judged
+  and checked inside riverrun's checker, compiled into tide's block and loaded with `tide.fromStory`.
   The compiler side is the `tide-compiler` module, from `compiler(dep)` in tide's `build.zig`, on the one riverrun
   a story's build stands on.

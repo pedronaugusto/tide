@@ -1,31 +1,29 @@
-//! tide in a story's build: its problems reported where they are written,
-//! and its block written into the compiled story.
+//! tide in a story's build: its problems reported inside riverrun's check,
+//! where they are written, and its block written into the compiled story.
 
 const std = @import("std");
 const riverrun = @import("riverrun-compiler");
 const tide = @import("tide");
 const read_ = @import("read.zig");
 
-const syntax = riverrun.syntax;
 const check_ = riverrun.check;
-const compile = riverrun.compile;
+const compile_ = riverrun.compile;
 const block = tide.block;
 
-/// Reports what does not hold together in `checked`'s time, at the place it is written. A tool that reads and
-/// checks a story runs this between checking and compiling, so a typo in a calendar fails with its line.
-pub fn check(gpa: std.mem.Allocator, diags: *syntax.Diagnostics, checked: *const check_.Checked) error{OutOfMemory}!void {
-    var arena: std.heap.ArenaAllocator = .init(gpa);
+/// tide's check of the whole story, which riverrun's check runs once its own are done: what only the whole of a
+/// calendar or a schedule shows, at the place it is written.
+pub fn check(_: ?*anyopaque, c: *check_.Checker, story: *const check_.Checked) error{OutOfMemory}!void {
+    var arena: std.heap.ArenaAllocator = .init(c.gpa);
     defer arena.deinit();
-    const r = try read_.read(gpa, arena.allocator(), checked);
-    for (r.problems) |p| try diags.add(gpa, p.span, .err, "{s}", .{p.message});
+    const r = try read_.read(c.gpa, arena.allocator(), story);
+    for (r.problems) |p| try c.err(p.span, "{s}", .{p.message});
 }
 
-/// The pass a game's vocabulary registers: tide's block, in the compiled story's ids.
-pub const pass: compile.Pass = .{ .name = "tide", .run = run };
-
-fn run(_: ?*anyopaque, c: *compile.Compiler) compile.Compiler.Error!void {
+/// tide's compile pass: its block, in the compiled story's ids.
+pub fn compile(_: ?*anyopaque, c: *compile_.Compiler) compile_.Compiler.Error!void {
     const r = try read_.read(c.gpa, c.arena, c.checked);
-    // a compile pass cannot say where: `check` says it, and the build refuses the story here
+    // what tide's check refused never reaches here; said again, it refuses the story where it is written
+    for (r.problems) |p| try c.err(p.span, "{s}", .{p.message});
     if (r.problems.len > 0) return error.PassFailed;
     // a story that declares no time has no block, and `fromStory` says so
     if (r.plan.clocks.len == 0 and r.plan.calendars.len == 0 and r.plan.schedules.len == 0) return;
@@ -35,13 +33,13 @@ fn run(_: ?*anyopaque, c: *compile.Compiler) compile.Compiler.Error!void {
     try c.b.block(block.name, block.version, bytes);
 }
 
-fn fact(c: *const compile.Compiler, raw: u16) u16 {
+fn fact(c: *const compile_.Compiler, raw: u16) u16 {
     if (raw == block.none16) return raw;
     return c.fact(.fromRaw(raw)).raw();
 }
 
 // The checker's ids in the plan, made the compiled story's.
-fn remap(c: *compile.Compiler, r: read_.Read) compile.Compiler.Error!block.Plan {
+fn remap(c: *compile_.Compiler, r: read_.Read) compile_.Compiler.Error!block.Plan {
     const a = c.arena;
     const clocks = try a.alloc(u16, r.plan.clocks.len);
     for (clocks, r.plan.clocks) |*out, raw| out.* = fact(c, raw);
@@ -64,7 +62,7 @@ fn remap(c: *compile.Compiler, r: read_.Read) compile.Compiler.Error!block.Plan 
     const scheds = try a.dupe(block.Schedule, r.plan.schedules);
     for (scheds, r.targets) |*s, t| s.section = switch (t) {
         .section => |id| c.section(id).raw(),
-        .part => |p| (c.part(p) orelse return error.PassFailed).raw(),
+        .part => |p| (c.part(p) orelse unreachable).raw(), // unreachable: the reader refuses a schedule on a candidate or a rule, which compile to no section
     };
     return .{ .clocks = clocks, .calendars = cals, .derived = derived, .schedules = scheds };
 }
