@@ -179,6 +179,8 @@ free: []u32,
 free_len: u32,
 /// The order the next schedule takes, so equal ticks come due as they were scheduled.
 next_order: u64 = 0,
+/// What `fromStory` read the declarations into, freed with the tide.
+owned: ?*std.heap.ArenaAllocator = null,
 
 pub fn init(gpa: std.mem.Allocator, options: Options) Error!Tide {
     try validate(options);
@@ -226,6 +228,10 @@ pub fn deinit(t: *Tide) void {
     t.gpa.free(t.slots);
     t.gpa.free(t.places);
     t.gpa.free(t.free);
+    if (t.owned) |arena| {
+        arena.deinit();
+        t.gpa.destroy(arena);
+    }
     t.* = undefined;
 }
 

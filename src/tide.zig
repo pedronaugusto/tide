@@ -11,6 +11,15 @@ pub const schedule = @import("tide/schedule.zig");
 pub const Recurrence = schedule.Recurrence;
 pub const Policy = schedule.Policy;
 pub const snapshot = @import("tide/snapshot.zig");
+/// tide's block in a compiled story, which its compile pass writes and `fromStory` reads.
+pub const block = @import("tide/block.zig");
+const load = @import("tide/load.zig");
+/// The time a compiled story declares (its calendars, clocks, derived facts and schedules, from tide's block),
+/// its facts written through a store. What comes due from a schedule the story declared carries the section's
+/// id as its key.
+pub const fromStory = load.fromStory;
+pub const LoadOptions = load.Options;
+pub const LoadError = load.Error;
 
 pub const ClockId = Tide.ClockId;
 pub const CalendarId = Tide.CalendarId;
@@ -25,4 +34,6 @@ test {
     _ = @import("tide/queue.zig");
     _ = schedule;
     _ = snapshot;
+    _ = block;
+    _ = load;
 }
