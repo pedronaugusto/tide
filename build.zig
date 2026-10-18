@@ -39,7 +39,8 @@ pub fn compiler(dep: *std.Build.Dependency) ?*std.Build.Module {
     });
 }
 
-/// tide's development: its tests under preflight's gate, the compiler side's beside the runtime's. Run through bay.
+/// tide's development: its tests under preflight's gate, the compiler side's beside the runtime's, and a school
+/// year compiled through `addStory` with tide registered, as a game's build compiles one. Run through bay.
 pub fn dev(b: *std.Build, tools: type) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -51,7 +52,35 @@ pub fn dev(b: *std.Build, tools: type) void {
     test_step.dependOn(&b.addRunArtifact(runtime_tests).step);
     const front_tests = b.addTest(.{ .name = "tide-compiler-tests", .filters = filters, .root_module = compiler(package) orelse return });
     test_step.dependOn(&b.addRunArtifact(front_tests).step);
+    test_step.dependOn(&b.addRunArtifact(storyTests(b, package, filters) orelse return).step);
     tools.preflight.addCi(b, package.builder, .{ .tests = test_step });
+}
+
+// The school year through `addStory`, its compiler and tide's compiler side on one riverrun for the machine doing
+// the building, then told by a test on the game's riverrun and tide, which must be one too or it does not compile.
+fn storyTests(b: *std.Build, package: *std.Build.Dependency, filters: []const []const u8) ?*std.Build.Step.Compile {
+    const side = compiler(b.dependency("tide", riverrun.building(b))) orelse return null;
+    const school = riverrun.addStory(b, b.dependency("riverrun", riverrun.building(b)), .{
+        .files = &.{package.path("src/front/testdata/school.river")},
+        .vocabulary = package.path("tools/vocabulary.zig"),
+        .packages = &.{.{ .name = "tide-compiler", .module = side }},
+    });
+    const runtime = package.module("tide");
+    const river = b.dependency("riverrun", .{ .target = runtime.resolved_target.?, .optimize = runtime.optimize.? });
+    return b.addTest(.{
+        .name = "tide-story-tests",
+        .filters = filters,
+        .root_module = b.createModule(.{
+            .root_source_file = package.path("tools/story_test.zig"),
+            .target = runtime.resolved_target,
+            .optimize = runtime.optimize,
+            .imports = &.{
+                .{ .name = "riverrun", .module = river.module("riverrun") },
+                .{ .name = "tide", .module = runtime },
+                .{ .name = "story", .module = school.module },
+            },
+        }),
+    });
 }
 
 fn imports(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode) []const std.Build.Module.Import {

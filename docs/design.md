@@ -138,6 +138,10 @@ facts (time):
   riverrun's checker. Both report through riverrun's diagnostics, so `addStory` prints them as riverrun's own; the
   compile pass meets none of them, and would refuse the story where it is written if it did.
 - **No builtins:** a clock is a `(clock)` fact, so `since()` and comparisons are riverrun's and cairn's own.
+- **In a game's build,** as riverrun's design has every package: the vocabulary lists `tide.package`, and the
+  build hands `addStory` tide's compiler side, `tide.compiler(b.dependency("tide", riverrun.building(b)))`, as
+  `tide-compiler`, on the riverrun the compiler stands on. tide's development compiles its school year this way and
+  tells it with the game's riverrun and tide, which would not compile were either another instance.
 
 **Why parts, not tags of the section, and not a `(time)` section:** a calendar's units, cycles and time facts each
 have a name and their own few tags, which is what a part is; the time facts are counted in the calendar's units,
