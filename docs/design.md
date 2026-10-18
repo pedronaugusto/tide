@@ -37,6 +37,26 @@ What is due is returned from `advance` as a list, in time order, deterministic f
 records each as a fact. Nothing reads tide directly: riverrun and cairn read its facts, and cairn indexes its own
 timed conditions by the clock facts' values, so neither depends on tide nor tide on them.
 
+## In the story
+
+tide adds vocabulary to `.river`, never grammar, as cairn does:
+
+- **The calendar is written in the story**, so writers and the checker know it: a section of kind `calendar` whose
+  tags declare its units, names and start.
+
+  ```
+  == year (calendar)          # units minute 60, slot 4, day 7, week 52 · slots morning, noon, afternoon, evening
+                              # days monday … sunday · start 1985-04-12 evening
+  ```
+
+  From it the checker knows the calendar's facts (`day`, `weekday`, `slot`, `week`) and their values, so
+  `weekday = sunday and slot = evening` is checked like any condition, and a typo fails the build.
+- **Times are a tag type** that any section, quest or pool candidate may carry: `# at day 12 evening`, `# every
+  sunday evening · times 5`. tide's schema types them; what comes due is recorded as a fact the story reads.
+- **No builtins:** a clock is a `(clock)` fact, so `since()` and comparisons are riverrun's and cairn's own.
+
+The runtime reads the calendar from the compiled story's block that tide owns, beside the graph.
+
 ## Events become facts
 
 tide has no event bus, and neither does cairn. A thing that happens (an item picked up, a wolf killed, a scheduled
