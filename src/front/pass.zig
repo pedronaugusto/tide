@@ -21,7 +21,7 @@ pub fn check(gpa: std.mem.Allocator, diags: *syntax.Diagnostics, checked: *const
 }
 
 /// The pass a game's vocabulary registers: tide's block, in the compiled story's ids.
-pub const pass: compile.Pass = .{ .run = run };
+pub const pass: compile.Pass = .{ .name = "tide", .run = run };
 
 fn run(_: ?*anyopaque, c: *compile.Compiler) compile.Compiler.Error!void {
     const r = try read_.read(c.gpa, c.arena, c.checked);
