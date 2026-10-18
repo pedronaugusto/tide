@@ -1,7 +1,7 @@
 # tide's design
 
 tide keeps a game's time: its clocks, its calendar, and what is scheduled to happen when. It writes time as
-riverrun facts and wakes what is due, so dialogue, quests and the world read one time. It knows no engine and no
+riverrun facts, so dialogue, quests and the world read one time without knowing tide. It knows no engine and no
 game. This page is the design it is built to; nothing is built yet.
 
 ## What it owns
@@ -27,15 +27,15 @@ alone. tide derives the calendar's facts from the clock (`day`, `weekday`, `slot
 
 ## Schedules
 
-- **Deadlines:** "when the clock reaches this instant". A condition anywhere (a quest's failure, a line's
-  availability, a pool's candidate) that compares a clock or a calendar fact is indexed by when it can change. One
-  scheduler holds every such instant in a heap, so time passing wakes only what is due and a ticking clock costs
-  nothing for the thousands of timed things that are not.
+- **Instants:** "when this clock reaches this value", in a heap, so a clock moving pops only what is due and a
+  step with nothing due costs one comparison.
 - **Recurrences:** every day at a slot, every Sunday evening, every hour, a number of times or for ever, written
   in the calendar's own units and expanded lazily, one occurrence at a time.
 - **Timers** relative to now, for a host's own needs.
 
-What is due is returned from `advance` as a list, in time order, deterministic for the same advances.
+What is due is returned from `advance` as a list, in time order, deterministic for the same advances; the host
+records each as a fact. Nothing reads tide directly: riverrun and cairn read its facts, and cairn indexes its own
+timed conditions by the clock facts' values, so neither depends on tide nor tide on them.
 
 ## Events become facts
 
