@@ -12,7 +12,7 @@ const ast = riverrun.syntax.ast;
 const Declared = riverrun.check.Declared;
 
 /// What a `(calendar)` section brings into the story: `Kind.declare`.
-pub fn declare(a: std.mem.Allocator, s: *const ast.Section) error{OutOfMemory}![]const Declared {
+pub fn declare(a: std.mem.Allocator, s: *const ast.Section, _: []const ast.File) error{OutOfMemory}![]const Declared {
     var out: std.ArrayList(Declared) = .empty;
     const scope: ?[]const u8 = if (written.tagOf(s.tags, "scope")) |t| written.only(t) else null;
     for (s.subsections) |*p| switch (written.what(p)) {

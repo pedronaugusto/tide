@@ -112,14 +112,14 @@ test "a calendar in the story is compiled, loaded and kept: Sunday evening comes
     try std.testing.expectEqual(@as(usize, 5), total);
 }
 
-test "a time misnamed is refused by tide's judge, where it is written" {
+test "a time misnamed is refused by tide's judge, where its value is written" {
     const cases = .{
         .{ "at sunday evening", "at sundy evening", 14, 59, "`sundy` is not a place or a count of `school`" },
         .{ "at sunday evening", "at weekday evening", 14, 59, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
         .{ "until day 34", "until day", 12, 17, "`day` takes its count: `day 34`" },
-        .{ "# every week ·", "# every fortnight ·", 14, 45, "`fortnight` is not a unit or a cycle of this calendar" },
-        .{ "# cycle day ·", "# cycle month ·", 11, 17, "`month` is not a unit of this calendar" },
-        .{ "# clock turn", "# clock day", 8, 45, "`day` is not a `(clock)` fact" },
+        .{ "# every week ·", "# every fortnight ·", 14, 51, "`fortnight` is not a unit or a cycle of this calendar" },
+        .{ "# cycle day ·", "# cycle month ·", 11, 23, "`month` is not a unit of this calendar" },
+        .{ "# clock turn", "# clock day", 8, 51, "`day` is not a `(clock)` fact" },
     };
     inline for (cases) |c| {
         const text = try replaced(school, c[0], c[1]);
