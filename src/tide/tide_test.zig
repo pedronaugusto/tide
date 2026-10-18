@@ -78,6 +78,31 @@ const Counted = struct {
                 return &c.memory.changes;
             }
         }.f,
+        // tide keeps no fact per thing; these pass through to the memory store unchanged
+        .getKey = struct {
+            fn f(ptr: *anyopaque, fact: facts.FactId, key: facts.Key) facts.Value {
+                const c: *Counted = @ptrCast(@alignCast(ptr)); // safe: made by `store` from a *Counted
+                return c.memory.store().getKey(fact, key);
+            }
+        }.f,
+        .setKey = struct {
+            fn f(ptr: *anyopaque, fact: facts.FactId, key: facts.Key, v: facts.Value) facts.SetError!void {
+                const c: *Counted = @ptrCast(@alignCast(ptr)); // safe: made by `store` from a *Counted
+                return c.memory.store().setKey(fact, key, v);
+            }
+        }.f,
+        .keyStamp = struct {
+            fn f(ptr: *anyopaque, fact: facts.FactId, key: facts.Key) u64 {
+                const c: *Counted = @ptrCast(@alignCast(ptr)); // safe: made by `store` from a *Counted
+                return c.memory.store().keyStamp(fact, key);
+            }
+        }.f,
+        .bounds = struct {
+            fn f(ptr: *anyopaque, fact: facts.FactId) ?facts.Bounds {
+                const c: *Counted = @ptrCast(@alignCast(ptr)); // safe: made by `store` from a *Counted
+                return c.memory.store().bounds(fact);
+            }
+        }.f,
     };
 };
 
