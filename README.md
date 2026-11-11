@@ -15,3 +15,9 @@ tide keeps a game's time: its clocks, its calendars and what is scheduled, as ri
   and checked inside riverrun's checker, compiled into tide's block and loaded with `tide.fromStory`.
   The compiler side is the `tide-compiler` module, from `compiler(dep)` in tide's `build.zig`, on the one riverrun
   a story's build stands on.
+
+## Stability
+
+tide is 0.x and tracks Zig 0.17.x. A breaking change comes only in a minor release
+(0.1 to 0.2), with a CHANGELOG entry saying what changed and what to write instead; a
+patch release never breaks.
