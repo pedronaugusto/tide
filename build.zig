@@ -49,6 +49,8 @@ pub fn dev(b: *std.Build, tools: type) void {
     const filters: []const []const u8 = if (test_filter) |filter| &.{filter} else &.{};
     const test_step = b.step("test", "Run the tests");
     const runtime_tests = b.addTest(.{ .name = "tide-tests", .filters = filters, .root_module = package.module("tide") });
+    // The block's properties: shakedown, in the development graph alone.
+    runtime_tests.root_module.addImport("shakedown", b.dependency("shakedown", .{ .target = target, .optimize = optimize }).module("shakedown"));
     test_step.dependOn(&b.addRunArtifact(runtime_tests).step);
     const front_tests = b.addTest(.{ .name = "tide-compiler-tests", .filters = filters, .root_module = compiler(package) orelse return });
     test_step.dependOn(&b.addRunArtifact(front_tests).step);

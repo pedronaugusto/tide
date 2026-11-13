@@ -16,8 +16,30 @@ tide keeps a game's time: its clocks, its calendars and what is scheduled, as ri
   The compiler side is the `tide-compiler` module, from `compiler(dep)` in tide's `build.zig`, on the one riverrun
   a story's build stands on.
 
+## Install
+
+Requires Zig 0.17. Fetch with `zig fetch --save git+https://github.com/pedronaugusto/tide`. The runtime is the
+`tide` module, on aegis and riverrun. A story's build that writes calendars and schedules in its `.river` files lists
+`tide.package` in its vocabulary and hands `tide.compiler(dep)` to riverrun's `addStory` as the `tide-compiler`
+package, both on the riverrun the build stands on.
+
+## Scope
+
+tide owns game time. It reads no wall clock (the host passes elapsed time in), renders nothing and has no event
+bus; a clock moves only when the host advances it, and never backwards.
+
+## Testing
+
+`bay test` runs the unit suite: clocks, rates, calendars, schedules and snapshots; the `.river` front end on stories
+compiled through riverrun's `addStory`; and properties of the compiled block (a plan written reads back as itself,
+and any bytes read to a plan or are refused, a block whole or not at all).
+
 ## Stability
 
 tide is 0.x and tracks Zig 0.17.x. A breaking change comes only in a minor release
 (0.1 to 0.2), with a CHANGELOG entry saying what changed and what to write instead; a
 patch release never breaks.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

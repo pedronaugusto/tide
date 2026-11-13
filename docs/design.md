@@ -22,7 +22,7 @@ replayable exactly.
   that moment; the fraction carried under the old one is dropped.
 - **Rate zero** is a clock only actions move: a minute a line of dialogue, a slot an activity, a turn.
 - **No clock runs backwards.** Going back is restoring a saved moment (below); a time loop restores the world's
-  facts and keeps the player's; WAKE's history restores a moment. A warp the story asks for is the host performing
+  facts and keeps the player's; a game's flashback restores a moment. A warp the story asks for is the host performing
   an action through `advance`; the story never sets time.
 - A clock writes its tick to a riverrun `(clock)` fact, only when it changed.
 

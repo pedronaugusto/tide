@@ -36,4 +36,5 @@ test {
     _ = snapshot;
     _ = block;
     _ = load;
+    _ = @import("tide/block_test.zig");
 }
