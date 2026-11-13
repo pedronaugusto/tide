@@ -10,8 +10,8 @@
             .hash = "aegis-0.2.4-rsxouj9yDQC9CdjMRwruqDGlipK_lKHyS_JODaoIQp4t",
         },
         .riverrun = .{
-            .url = "git+https://github.com/pedronaugusto/riverrun#336b2a2836434ab87fb65dbbfc33fc4565779fe9",
-            .hash = "riverrun-0.0.0-6jhPcyWNDAC38ZgepojfN9WUEf_nBnYCotaMB-NASi8s",
+            .url = "git+https://github.com/pedronaugusto/riverrun#c8d32347a9c9733f937a294a57f94d99e8b50f76",
+            .hash = "riverrun-0.0.0-6jhPcyWNDADw49B1N283VUCZE3a13JJT-ForOINdkV2o",
         },
     },
     .dev_dependencies = .{
@@ -21,8 +21,8 @@
         },
 
         .shakedown = .{
-            .url = "git+https://github.com/pedronaugusto/shakedown#e8fae93cc7a0858a579f18f9f173f99ffab509c2",
-            .hash = "shakedown-0.6.0-BR8U4_UyGACDv1Jlc8Q1J8QBvht3GkYTgi4SfQxpwj_h",
+            .url = "git+https://github.com/pedronaugusto/shakedown#9005b65d81e8efab8bda86bf5001de6351717fe0",
+            .hash = "shakedown-0.6.0-BR8U40gRGwA1j8mnIfkc4u_U4meNZwr9_YRrNv4zVzTM",
         },
     },
 }
