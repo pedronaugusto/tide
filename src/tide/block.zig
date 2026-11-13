@@ -13,6 +13,7 @@
 const std = @import("std");
 const calendar = @import("calendar.zig");
 const schedule = @import("schedule.zig");
+const aegis = @import("aegis");
 
 /// The block's name in a compiled story.
 pub const name = "tide";
@@ -97,10 +98,10 @@ pub const Schedule = struct {
 
 /// The block's bytes, on `gpa`, owned by the caller.
 pub fn write(gpa: std.mem.Allocator, p: Plan) error{OutOfMemory}![]u8 {
-    std.debug.assert(p.clocks.len <= max_clocks);
-    std.debug.assert(p.calendars.len <= max_calendars);
-    std.debug.assert(p.derived.len <= max_derived);
-    std.debug.assert(p.schedules.len <= max_schedules);
+    aegis.assert.invariant(p.clocks.len <= max_clocks, "a plan holds at most max_clocks clocks, as the compiler builds it");
+    aegis.assert.invariant(p.calendars.len <= max_calendars, "a plan holds at most max_calendars calendars, as the compiler builds it");
+    aegis.assert.invariant(p.derived.len <= max_derived, "a plan holds at most max_derived derived clocks, as the compiler builds it");
+    aegis.assert.invariant(p.schedules.len <= max_schedules, "a plan holds at most max_schedules schedules, as the compiler builds it");
     var w: Writer = .{ .gpa = gpa };
     errdefer w.out.deinit(gpa);
     try w.int(u8, @intCast(p.clocks.len)); // safe: asserted above
@@ -125,7 +126,7 @@ const Writer = struct {
     }
 
     fn bytes(w: *Writer, s: []const u8) error{OutOfMemory}!void {
-        std.debug.assert(s.len <= std.math.maxInt(u16));
+        aegis.assert.invariant(s.len <= std.math.maxInt(u16), "a name fits its u16 length");
         try w.int(u16, @intCast(s.len)); // safe: asserted above
         try w.out.appendSlice(w.gpa, s);
     }
@@ -134,8 +135,8 @@ const Writer = struct {
         try w.int(u32, c.section);
         try w.int(u8, c.clock);
         try w.int(u64, c.start);
-        std.debug.assert(c.units.len <= calendar.max_units);
-        std.debug.assert(c.cycles.len <= calendar.max_cycles);
+        aegis.assert.invariant(c.units.len <= calendar.max_units, "a calendar holds at most max_units units");
+        aegis.assert.invariant(c.cycles.len <= calendar.max_cycles, "a calendar holds at most max_cycles cycles");
         try w.int(u8, @intCast(c.units.len)); // safe: asserted above
         for (c.units) |u| {
             try w.bytes(u.name);
@@ -146,7 +147,7 @@ const Writer = struct {
                 },
                 .cycle => |sizes| {
                     try w.int(u8, 1);
-                    std.debug.assert(sizes.len <= max_sizes);
+                    aegis.assert.invariant(sizes.len <= max_sizes, "a cycle holds at most max_sizes sizes");
                     try w.int(u16, @intCast(sizes.len)); // safe: asserted above
                     for (sizes) |s| try w.int(u32, s);
                 },

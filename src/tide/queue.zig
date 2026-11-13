@@ -5,6 +5,7 @@
 //! a dead entry. Its room is set when it is made; nothing allocates after.
 
 const std = @import("std");
+const aegis = @import("aegis");
 
 pub const none = std.math.maxInt(u32);
 
@@ -37,8 +38,8 @@ pub const Queue = struct {
 
     /// Adds `e`; `places[slot]` keeps its place. The queue has room: a slot is in one queue at most.
     pub fn push(q: *Queue, places: []u32, e: Entry) void {
-        std.debug.assert(q.len < q.items.len);
-        std.debug.assert(places[e.slot] == none);
+        aegis.assert.invariant(q.len < q.items.len, "the queue has room: a slot is in one queue at most");
+        aegis.assert.invariant(places[e.slot] == none, "the slot is in no queue yet");
         q.items[q.len] = e;
         places[e.slot] = q.len;
         q.len += 1;
@@ -47,7 +48,7 @@ pub const Queue = struct {
 
     /// Takes the entry at `place` out.
     pub fn remove(q: *Queue, places: []u32, place: u32) Entry {
-        std.debug.assert(place < q.len);
+        aegis.assert.invariant(place < q.len, "the place names an entry in the queue");
         const out = q.items[place];
         places[out.slot] = none;
         q.len -= 1;

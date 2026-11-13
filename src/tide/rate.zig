@@ -4,6 +4,7 @@
 //! large one reach the same tick, and no float ever drifts.
 
 const std = @import("std");
+const aegis = @import("aegis");
 
 pub const Rate = struct {
     /// Ticks gained for every `per` units of elapsed time.
@@ -29,8 +30,8 @@ pub const Meter = struct {
 
     /// The whole ticks `elapsed` is worth, the fraction kept for next time. Paused, nothing.
     pub fn convert(m: *Meter, elapsed: u64) u64 {
-        std.debug.assert(m.rate.valid());
-        std.debug.assert(m.carry < m.rate.per);
+        aegis.assert.invariant(m.rate.valid(), "a meter's rate is valid: set only through `set`");
+        aegis.assert.invariant(m.carry < m.rate.per, "the carried fraction stays below one tick");
         if (m.paused) return 0;
         const parts = @as(u128, elapsed) * m.rate.ticks + m.carry;
         m.carry = @intCast(parts % m.rate.per); // safe: below `per`, a u32
@@ -41,7 +42,7 @@ pub const Meter = struct {
     /// A new rate from now on; the fraction of a tick carried under the old one is dropped, so a rate always
     /// means the same from the moment it is set.
     pub fn set(m: *Meter, rate: Rate) void {
-        std.debug.assert(rate.valid());
+        aegis.assert.invariant(rate.valid(), "the caller gives a valid rate");
         m.rate = rate;
         m.carry = 0;
     }

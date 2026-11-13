@@ -98,7 +98,7 @@ const Reader = struct {
     fn clockOf(r: *const Reader, module: sym.ModuleId, name: []const u8) ?u8 {
         const named = r.checked.value_names.find(module, name) orelse return null;
         if (named != .fact) return null;
-        for (r.clocks.items, 0..) |c, i| if (c == named.fact.raw()) return @intCast(i); // safe: at most max_clocks
+        for (r.clocks.items, 0..) |c, i| if (named.fact.eql(.fromRaw(c))) return @intCast(i); // safe: at most max_clocks
         return null;
     }
 
@@ -281,7 +281,7 @@ const Reader = struct {
     fn calendarFor(r: *Reader, tags: []const ast.Tag, span: Span) error{OutOfMemory}!?u8 {
         switch (written.which(r.checked.sections, tags)) {
             .one => |i| {
-                for (r.cals.items, 0..) |c, k| if (c.section.raw() == i) return @intCast(k); // safe: at most max_calendars
+                for (r.cals.items, 0..) |c, k| if (c.section.eql(.fromRaw(std.math.cast(@TypeOf(c.section.raw()), i) orelse continue))) return @intCast(k); // safe: at most max_calendars
                 return null; // a calendar refused, which said why
             },
             .named_none => return null,

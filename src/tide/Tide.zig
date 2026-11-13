@@ -252,7 +252,7 @@ fn validate(o: Options) Error!void {
         for (o.clocks[0..i]) |p| if (std.mem.eql(u8, p.name, c.name)) return error.DuplicateName;
     }
     for (o.calendars, 0..) |b, i| {
-        if (b.clock.raw() >= o.clocks.len) return error.UnknownClock;
+        if (!within(b.clock, o.clocks.len)) return error.UnknownClock;
         if (b.binding.counts.len > b.decl.units.len or b.binding.places.len > b.decl.units.len or b.binding.cycles.len > b.decl.cycles.len) return error.BadBinding;
         for (o.calendars[0..i]) |p| if (std.mem.eql(u8, p.decl.name, b.decl.name)) return error.DuplicateName;
     }
@@ -265,7 +265,7 @@ fn validateDerived(t: *const Tide) Error!void {
             switch (w.per) {
                 .ticks => |p| if (p == 0) return error.BadDerived,
                 .unit => |u| {
-                    if (u.calendar.raw() >= t.calendars.len) return error.UnknownCalendar;
+                    if (!within(u.calendar, t.calendars.len)) return error.UnknownCalendar;
                     const b = t.calendars[u.calendar.raw()];
                     if (!b.clock.eql(w.clock) or u.unit >= b.calendar.decl.units.len) return error.BadDerived;
                 },
@@ -280,7 +280,14 @@ fn validateDerived(t: *const Tide) Error!void {
 }
 
 fn clockOk(t: *const Tide, c: ClockId) Error!void {
-    if (c.raw() >= t.clocks.len) return error.UnknownClock;
+    if (!within(c, t.clocks.len)) return error.UnknownClock;
+}
+
+/// Whether `id` names one of `count` things: it comes before the count, by
+/// the id's own order. A count past any id's range holds every id.
+fn within(id: anytype, count: usize) bool {
+    const limit = std.math.cast(@TypeOf(id.raw()), count) orelse return true;
+    return id.compare(.fromRaw(limit)) == .lt;
 }
 
 // ---------------------------------------------------------------- reading
@@ -436,7 +443,7 @@ fn pop(t: *Tide, clock: ClockId, target: u64) Due {
             return due;
         },
         .recurrence => |*rec| {
-            // unreachable: a recurrence's calendar was checked when it was scheduled
+            // glint-ignore: Z026 -- a recurrence's calendar was checked when it was scheduled
             const cal = t.calendarOf(clock, rec.r) catch unreachable;
             const count = if (rec.r.policy == .once) @max(1, rec.r.upTo(rec.next, target, cal)) else 1;
             rec.next += count;
