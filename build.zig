@@ -72,7 +72,7 @@ const documented = struct {
 /// What `riverrun play` writes for the school year under `tools/testdata/school.play`.
 const school_played =
     \\== ramen
-    \\  [every week] [at "sunday evening"] [times 5]
+    \\  [every week] [at sunday evening] [times 5]
     \\-> end
     \\> :facts
     \\  slot = morning
