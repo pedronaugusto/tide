@@ -311,6 +311,12 @@ pub fn clockNamed(t: *const Tide, name: []const u8) ?ClockId {
     return null;
 }
 
+/// The clock that keeps `fact` as its `(clock)` fact, if one does.
+pub fn clockOf(t: *const Tide, fact: FactId) ?ClockId {
+    for (t.clocks, 0..) |c, i| if (c.fact) |f| if (f.eql(fact)) return .fromRaw(@intCast(i)); // safe: max_clocks
+    return null;
+}
+
 pub fn calendarNamed(t: *const Tide, name: []const u8) ?CalendarId {
     for (t.calendars, 0..) |b, i| if (std.mem.eql(u8, b.calendar.decl.name, name)) return .fromRaw(@intCast(i)); // safe: max_calendars
     return null;

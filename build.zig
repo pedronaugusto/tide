@@ -69,6 +69,34 @@ const documented = struct {
     const documents = [_][]const u8{ "docs/design.md", "src/front/written.zig", "src/front/vocabulary.zig" };
 };
 
+/// What `riverrun play` writes for the school year under `tools/testdata/school.play`.
+const school_played =
+    \\== ramen
+    \\  [every week] [at "sunday evening"] [times 5]
+    \\-> end
+    \\> :facts
+    \\  slot = morning
+    \\  weekday = monday
+    \\  days_left = 34
+    \\> :wait 27
+    \\! due ramen
+    \\  at turn 27
+    \\RYUJI: yo. ramen?
+    \\-> end
+    \\> :facts
+    \\  turn = 27
+    \\  slot = evening
+    \\  day = 6
+    \\  weekday = sunday
+    \\  days_left = 28
+    \\> :wait 28
+    \\! due ramen
+    \\  at turn 55
+    \\RYUJI: yo. ramen?
+    \\-> end
+    \\
+;
+
 fn docs(b: *std.Build, test_step: *std.Build.Step) ?void {
     const package = b.dependency("tide", riverrun.building(b));
     const river = b.dependency("riverrun", riverrun.building(b));
@@ -77,6 +105,15 @@ fn docs(b: *std.Build, test_step: *std.Build.Step) ?void {
         .packages = &.{.{ .name = "tide-compiler", .module = compiler(package) orelse return null }},
     });
     for (documented.stories) |story| test_step.dependOn(&riverrun.addCheck(b, program, &.{package.path(story)}, .{}).step);
+    // the school year played as a game plays it, its time kept by tide: the transcript pinned
+    const played = b.addRunArtifact(program);
+    played.addArgs(&.{ "play", "--script" });
+    played.addFileArg2(package.path("tools/testdata/school.play"), .{});
+    played.addFileArg2(package.path("src/front/testdata/school.river"), .{});
+    played.setStdIn(.{ .bytes = "" });
+    played.expectExitCode(0);
+    played.expectStdOutEqual(school_played);
+    test_step.dependOn(&played.step);
     const excerpts = riverrun.addExcerptsTest(b, river, .{ .package = package.builder, .stories = &documented.stories, .documents = &documented.documents }) orelse return null;
     test_step.dependOn(&b.addRunArtifact(excerpts).step);
 }

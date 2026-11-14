@@ -166,6 +166,18 @@ fact of its kind, every section there), takes the names from the story, starts t
 which comes due with its section's id as its key. A story that declares no time has no block. The reader refuses
 any block cut short, too long, with a count past its bound or an unknown tag; it has a fuzz target.
 
+## Played without the game
+
+`riverrun play` keeps a story's time as a game does: `tide.package` carries tide's runtime for riverrun's tools
+(`running`, in `src/front/running.zig`), which loads the story's calendar over the played story's facts
+(`fromStory`, then `sync`, so the calendar's facts hold from the start), and moves a clock the player moves
+(`:wait 27`, or `--wait 27` from the start) with `advance` and the clock tide keeps for that fact (`clockOf`). Each
+schedule that came due on the way is told in time order, `! due ramen` with when (`at turn 27`), and the play tells
+its section then, as an interruption of the flow, or anew where the story had ended. A clock tide does not keep is
+moved by the play itself.
+
+Built.
+
 ## Events become facts
 
 tide has no event bus, and neither does cairn. A thing that happens (an item picked up, a wolf killed, a scheduled

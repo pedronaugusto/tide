@@ -15,6 +15,9 @@ tide keeps a game's time: its clocks, its calendars and what is scheduled, as ri
   and checked inside riverrun's checker, compiled into tide's block and loaded with `tide.fromStory`.
   The compiler side is the `tide-compiler` module, from `compiler(dep)` in tide's `build.zig`, on the one riverrun
   a story's build stands on.
+- Played without the game by `riverrun play`, as the game keeps time: a clock the player moves (`:wait`) is moved
+  by tide, the calendar's facts follow it, and each schedule that comes due on the way is told and its scene
+  played.
 
 ## Install
 

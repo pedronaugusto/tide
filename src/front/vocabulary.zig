@@ -82,4 +82,5 @@ pub const package: riverrun.Package = .{
     .keys = &keys,
     .check = .{ .run = pass.check },
     .compile = .{ .name = "tide", .run = pass.compile },
+    .running = @import("running.zig").running,
 };

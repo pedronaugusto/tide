@@ -20,4 +20,5 @@ test {
     _ = read;
     _ = @import("front/written.zig");
     _ = @import("front/front_test.zig");
+    _ = @import("front/running.zig");
 }
