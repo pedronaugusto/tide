@@ -102,7 +102,7 @@ game's vocabulary lists. The calendar is a section of kind `calendar`; its parts
 time facts it keeps; a schedule is tags on any section, or on a part of a scene or a registered kind. The calendar
 declares the facts it keeps, so the story reads them and never declares them.
 
-```
+```river
 facts (time):
   turn:  int   (clock)
 

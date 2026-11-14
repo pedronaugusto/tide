@@ -7,6 +7,8 @@ const riverrun = @import("riverrun-compiler");
 const runtime = @import("riverrun");
 const tide = @import("tide");
 const vocabulary = @import("vocabulary.zig");
+const shakedown = @import("shakedown");
+const tools = @import("riverrun-tools");
 
 const gpa = std.testing.allocator;
 const check = riverrun.check;
@@ -66,6 +68,15 @@ pub fn build(text: []const u8) !Built {
     if (b.diags.errors() == 0) b.compiled = try riverrun.compile.run(gpa, &b.diags, &b.checked.?, .{ .passes = joined.passes });
     return b;
 }
+
+/// The vocabulary tide's development compiles its stories with (tools/vocabulary.zig): the game's `phone` key, with
+/// tide registered.
+const StoryVocabulary = struct {
+    const schema: check.Schema = .{ .keys = &.{.{ .name = "phone", .on = .{ .section = true } }} };
+    pub const options: check.Options = .{ .schema = &schema };
+    pub const packages: []const riverrun.Package = &.{vocabulary.package};
+};
+const story_vocabulary = riverrun.join(StoryVocabulary);
 
 fn replaced(text: []const u8, from: []const u8, to: []const u8) ![]u8 {
     try std.testing.expect(std.mem.find(u8, text, from) != null);
@@ -142,7 +153,7 @@ test "what only the whole calendar shows is said by tide's check, at its place" 
     const cases = .{
         .{ "[size 4]", "[size 5]", 8, 4, "the calendar does not hold together: a unit's names are not one for each of its places in the next unit, or a cycle's for each of its length" },
         .{ "[cycle day] [place", "[cycle day] [offset 9] [place", 8, 4, "the calendar does not hold together: a cycle is of length zero, or starts past its end" },
-        .{ "[until day 34]", "[per day]", 16, 3, "a calendar's part is a unit (`size`), a cycle (`cycle`) or a time fact it keeps (`until`, `since`, `drift`)" },
+        .{ "[until day 34] [per day]", "[per day]", 16, 3, "a calendar's part is a unit (`size`), a cycle (`cycle`) or a time fact it keeps (`until`, `since`, `drift`)" },
     };
     inline for (cases) |c| {
         const text = try replaced(school, c[0], c[1]);
@@ -214,3 +225,101 @@ test "a story without its block, or with a damaged one, is refused before anythi
     const without: runtime.story.Story = try .init(other.compiled.?.graph, .{});
     try std.testing.expectError(error.NoTime, tide.fromStory(gpa, &without, null, .{}));
 }
+
+test "any text through riverrun's reader, checker and compiler with tide registered is a story told and its time kept, or diagnostics; never a crash" {
+    var seen: u32 = 0;
+    try shakedown.check(gpa, &seen, struct {
+        fn one(compiled: *u32, case: *shakedown.Case) anyerror!void {
+            const gen = shakedown.gen;
+            var arena: std.heap.ArenaAllocator = .init(gpa);
+            defer arena.deinit();
+            const a = arena.allocator();
+            var text: std.ArrayList(u8) = .empty;
+            if (gen.intRange(case.source, u8, 0, 3) == 0) {
+                // rows of calendar-like pieces in any order
+                for (0..gen.intRange(case.source, usize, 1, 24)) |_| {
+                    try text.appendSlice(a, gen.oneOf(case.source, []const u8, &pieces));
+                    try text.append(a, '\n');
+                }
+            } else {
+                try text.appendSlice(a, school);
+                for (0..gen.intRange(case.source, usize, 1, 6)) |_| try change(case.source, a, &text);
+            }
+            const Picker = struct {
+                fn pick(ctx: ?*anyopaque, open: usize) usize {
+                    return gen.intRange(@ptrCast(@alignCast(ctx.?)), usize, 0, open - 1);
+                }
+            };
+            const outcome = try tools.trial.trial(gpa, &.{.{ .path = "school.river", .text = text.items }}, story_vocabulary, .{ .package = time }, .{ .ctx = case.source, .pick = Picker.pick });
+            switch (outcome) {
+                .refused => {},
+                .told => compiled.* += 1,
+                .fault => |f| {
+                    var buffer: [256]u8 = undefined;
+                    var w: std.Io.Writer = .fixed(&buffer);
+                    tools.trial.describe(f, &w) catch {};
+                    std.debug.print("{s}\n{s}\n", .{ w.buffered(), text.items });
+                    return error.TestUnexpectedResult;
+                },
+            }
+        }
+
+        const pieces = [_][]const u8{
+            "facts (time):",               "  turn:  int   (clock)",  "  mood: one of calm, cross",                     "== school (calendar)",
+            "  [clock turn] [scope time]", "= slot",                  "  [size 1] [place slot] [names morning, noon]",  "= day",
+            "  [size 4] [count day]",      "= week",                  "  [cycle day] [place weekday] [names mon, tue]", "= days_left",
+            "  [until day 34] [per day]",  "== ramen",                "  [every week] [at tue noon] [times 2]",         "{ weekday = tue and slot + 1 > 0 } Go.",
+            "-> end",                      "cast:",                   "  ryuji  \"Ryuji\"",                             "RYUJI: yo. {days_left - 1} days.",
+            "  [every day] [at noon]",     "  [length 7] [offset 3]", "  [until day 1 + 2]",                            "[mood = cross]",
+            "",                            "= term",                  "  [cycle week] [count term]",                    "  [phone]",
+        };
+
+        // One change to `text`: a byte replaced, cut or added, a row cut, doubled or moved, or the end cut off.
+        fn change(s: *shakedown.Source, a: std.mem.Allocator, text: *std.ArrayList(u8)) !void {
+            if (text.items.len == 0) return text.appendSlice(a, shakedown.gen.oneOf(s, []const u8, &pieces));
+            const at = shakedown.gen.intRange(s, usize, 0, text.items.len - 1);
+            const alphabet = "=#{}()[]^<>:,.+-*\" \nabdkmnstwy0137_";
+            const byte = alphabet[shakedown.gen.intRange(s, usize, 0, alphabet.len - 1)];
+            const start = if (std.mem.findScalarLast(u8, text.items[0..at], '\n')) |nl| nl + 1 else 0;
+            const end = if (std.mem.findScalarPos(u8, text.items, at, '\n')) |nl| nl + 1 else text.items.len;
+            switch (shakedown.gen.intRange(s, u8, 0, 6)) {
+                0 => text.items[at] = byte,
+                1 => _ = text.orderedRemove(at),
+                2 => try text.insert(a, at, byte),
+                3 => text.replaceRangeAssumeCapacity(start, end - start, ""),
+                4 => try text.insertSlice(a, start, try a.dupe(u8, text.items[start..end])),
+                5 => {
+                    const row = try a.dupe(u8, text.items[start..end]);
+                    text.replaceRangeAssumeCapacity(start, end - start, "");
+                    const to = shakedown.gen.intRange(s, usize, 0, text.items.len);
+                    const to_row = if (std.mem.findScalarLast(u8, text.items[0..to], '\n')) |nl| nl + 1 else 0;
+                    try text.insertSlice(a, to_row, row);
+                },
+                else => text.shrinkRetainingCapacity(at),
+            }
+        }
+    }.one, .{ .cases = 600, .seed = 0x71de });
+    // the property reaches the compiler, the runtime and tide's time, not only the reader's refusals
+    try std.testing.expect(seen > 60);
+}
+
+/// tide's runtime over a story that compiled and was told: its block loaded and every clock it keeps advanced, as a
+/// game advances them. A block tide's pass wrote that its loader refuses is a fault; a story with no calendar, and
+/// what advancing names, are the story's.
+const time: tools.trial.Package = .{
+    .run = struct {
+        fn run(_: ?*anyopaque, l: *tools.walk.Loaded) error{ OutOfMemory, Refused }!void {
+            var t = tide.fromStory(gpa, &l.story, l.memory.store(), .{}) catch |e| return switch (e) {
+                error.OutOfMemory => error.OutOfMemory,
+                error.NoTime => {},
+                else => error.Refused,
+            };
+            defer t.deinit();
+            t.sync() catch return;
+            var due: [8]tide.Due = undefined;
+            for (0..t.clocks.len) |i| for (0..4) |_| {
+                _ = t.advance(.fromRaw(@intCast(i)), 3, &due) catch return; // safe: below max_clocks
+            };
+        }
+    }.run,
+};

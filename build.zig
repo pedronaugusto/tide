@@ -53,9 +53,32 @@ pub fn dev(b: *std.Build, tools: type) void {
     runtime_tests.root_module.addImport("shakedown", b.dependency("shakedown", .{ .target = target, .optimize = optimize }).module("shakedown"));
     test_step.dependOn(&b.addRunArtifact(runtime_tests).step);
     const front_tests = b.addTest(.{ .name = "tide-compiler-tests", .filters = filters, .root_module = compiler(package) orelse return });
+    // The whole compiler's property: riverrun's tools put a story through all of it, fuzzed by shakedown.
+    front_tests.root_module.addImport("shakedown", b.dependency("shakedown", .{ .target = target, .optimize = optimize }).module("shakedown"));
+    front_tests.root_module.addImport("riverrun-tools", riverrun.tools(package.builder.dependency("riverrun", .{ .target = target, .optimize = optimize })) orelse return);
     test_step.dependOn(&b.addRunArtifact(front_tests).step);
     test_step.dependOn(&b.addRunArtifact(storyTests(b, package, filters) orelse return).step);
+    docs(b, test_step) orelse return;
     tools.preflight.addCi(b, package.builder, .{ .tests = test_step });
+}
+
+/// The stories tide's documentation shows: each checked by `riverrun check` with the game's vocabulary of tide's
+/// development, and every story the documents show rows of one of them.
+const documented = struct {
+    const stories = [_][]const u8{"src/front/testdata/school.river"};
+    const documents = [_][]const u8{ "docs/design.md", "src/front/written.zig", "src/front/vocabulary.zig" };
+};
+
+fn docs(b: *std.Build, test_step: *std.Build.Step) ?void {
+    const package = b.dependency("tide", riverrun.building(b));
+    const river = b.dependency("riverrun", riverrun.building(b));
+    const program = riverrun.addProgram(b, river, .{
+        .vocabulary = package.path("tools/vocabulary.zig"),
+        .packages = &.{.{ .name = "tide-compiler", .module = compiler(package) orelse return null }},
+    });
+    for (documented.stories) |story| test_step.dependOn(&riverrun.addCheck(b, program, &.{package.path(story)}, .{}).step);
+    const excerpts = riverrun.addExcerptsTest(b, river, .{ .package = package.builder, .stories = &documented.stories, .documents = &documented.documents }) orelse return null;
+    test_step.dependOn(&b.addRunArtifact(excerpts).step);
 }
 
 // The school year through `addStory`, its compiler and tide's compiler side on one riverrun for the machine doing

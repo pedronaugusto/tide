@@ -17,6 +17,7 @@
 //!
 //!     == ramen
 //!       [every week] [at sunday evening] [times 5]
+//!     { weekday = sunday and slot = evening } RYUJI: yo. ramen?
 //!     -> end
 //!
 //! The calendar declares the facts it keeps (`slot`, `day`, `weekday`,
