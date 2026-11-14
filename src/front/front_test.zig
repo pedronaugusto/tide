@@ -44,6 +44,13 @@ pub const Built = struct {
         return b.tree.?.place(d.span);
     }
 
+    /// An error with this message, at this place.
+    fn has(b: *const Built, line: u32, col: u32, message: []const u8) !void {
+        for (b.diags.list.items) |d| if (d.severity == .err and b.at(d).line == line and b.at(d).col == col and std.mem.eql(u8, d.message, message)) return;
+        for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ b.at(d).line, b.at(d).col, d.message });
+        return error.TestMissingDiagnostic;
+    }
+
     /// The one error there is, which must be this one.
     fn only(b: *const Built, line: u32, col: u32, message: []const u8) !void {
         if (b.diags.errors() != 1) for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ b.at(d).line, b.at(d).col, d.message });
@@ -227,9 +234,8 @@ test "a story without its block, or with a damaged one, is refused before anythi
 }
 
 test "any text through riverrun's reader, checker and compiler with tide registered is a story told and its time kept, or diagnostics; never a crash" {
-    var seen: u32 = 0;
-    try shakedown.check(gpa, &seen, struct {
-        fn one(compiled: *u32, case: *shakedown.Case) anyerror!void {
+    try shakedown.check(gpa, {}, struct {
+        fn one(_: void, case: *shakedown.Case) anyerror!void {
             const gen = shakedown.gen;
             var arena: std.heap.ArenaAllocator = .init(gpa);
             defer arena.deinit();
@@ -243,6 +249,8 @@ test "any text through riverrun's reader, checker and compiler with tide registe
                 }
             } else {
                 try text.appendSlice(a, school);
+                // a scene the walk tells whatever the time: a line with the calendar's count in its words, a choice
+                if (gen.boolean(case.source)) try text.appendSlice(a, "== evening\nRYUJI: {days_left} days left.\n* Ramen.\n  -> end\n* Study.\n  -> end\n");
                 for (0..gen.intRange(case.source, usize, 1, 6)) |_| try change(case.source, a, &text);
             }
             const Picker = struct {
@@ -253,7 +261,10 @@ test "any text through riverrun's reader, checker and compiler with tide registe
             const outcome = try tools.trial.trial(gpa, &.{.{ .path = "school.river", .text = text.items }}, story_vocabulary, .{ .package = time }, .{ .ctx = case.source, .pick = Picker.pick });
             switch (outcome) {
                 .refused => {},
-                .told => compiled.* += 1,
+                .told => |t| {
+                    case.reached("compiled");
+                    if (t.lines > 0) case.reached("told a line");
+                },
                 .fault => |f| {
                     var buffer: [256]u8 = undefined;
                     var w: std.Io.Writer = .fixed(&buffer);
@@ -298,9 +309,12 @@ test "any text through riverrun's reader, checker and compiler with tide registe
                 else => text.shrinkRetainingCapacity(at),
             }
         }
-    }.one, .{ .cases = 600, .seed = 0x71de });
-    // the property reaches the compiler, the runtime and tide's time, not only the reader's refusals
-    try std.testing.expect(seen > 60);
+    }.one, .{
+        .cases = 600,
+        .seed = 0x71de,
+        // the property reaches the compiler and the runtime, not only the reader's refusals
+        .reach = &.{ "compiled", "told a line" },
+    });
 }
 
 /// tide's runtime over a story that compiled and was told: its block loaded and every clock it keeps advanced, as a
@@ -323,3 +337,24 @@ const time: tools.trial.Package = .{
         }
     }.run,
 };
+
+test "a time is read against the part that holds the place, where two parts share a name" {
+    // two units called `slot`, the first without a place: a place named by its value is the second's
+    var b = try build(
+        \\facts (time):
+        \\  turn:  int   (clock)
+        \\== school (calendar)
+        \\  [clock turn] [scope time]
+        \\= slot
+        \\  [size 1]
+        \\= slot
+        \\  [size 1] [place slot] [names morning, noon]
+        \\== ramen
+        \\  [every slot] [at noon]
+        \\-> end
+    );
+    defer b.deinit();
+    // refused for the name given twice, and for a calendar that does not hold together; never a crash
+    try b.has(7, 3, "the part `slot` is declared twice in `school`: first at school.river:5:3");
+    try std.testing.expect(b.compiled == null);
+}

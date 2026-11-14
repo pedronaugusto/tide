@@ -210,14 +210,26 @@ fn named(a: std.mem.Allocator, s: *const ast.Section, w: []const u8) error{OutOf
     return .{ .problem = try a.print("`{s}` is not a place or a count of `{s}`", .{ w, s.name.text }) };
 }
 
-// The place a part holds, where it is a unit or a cycle with a place fact.
+// The place a part holds, where it is a unit or a cycle with a place fact: the part itself, by its place among
+// the parts of its kind, never by its name, which another part may share.
 fn placeOfPart(s: *const ast.Section, p: *const ast.Subsection) ?Place {
     if (tagOf(p.tags, "place") == null) return null;
     return switch (what(p)) {
-        .unit => .{ .place = numbered(s, .unit, p.name.text) orelse return null },
-        .cycle => .{ .cycle = numbered(s, .cycle, p.name.text) orelse return null },
+        .unit => .{ .place = numberOf(s, .unit, p) orelse return null },
+        .cycle => .{ .cycle = numberOf(s, .cycle, p) orelse return null },
         else => null,
     };
+}
+
+// The number of the part `p` among the calendar's parts of its kind, as `nth` counts them.
+fn numberOf(s: *const ast.Section, of: What, p: *const ast.Subsection) ?u8 {
+    var i: u8 = 0;
+    for (s.subsections) |*q| if (what(q) == of) {
+        if (q == p) return i;
+        if (i == std.math.maxInt(u8)) return null;
+        i += 1;
+    };
+    return null;
 }
 
 /// The calendar a schedule's tags mean, by its section's number in `sections`: the one `calendar` names, else the
