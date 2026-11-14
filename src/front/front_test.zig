@@ -25,6 +25,8 @@ pub const school = @embedFile("testdata/school.river");
 pub const Built = struct {
     arena: std.heap.ArenaAllocator,
     diags: riverrun.syntax.Diagnostics,
+    /// The story's one file, as read.
+    tree: ?*const riverrun.syntax.ast.File = null,
     checked: ?check.Checked = null,
     compiled: ?riverrun.compile.Compiled = null,
 
@@ -35,14 +37,19 @@ pub const Built = struct {
         b.arena.deinit();
     }
 
+    /// Where a diagnostic is, as a line and a column.
+    pub fn at(b: *const Built, d: riverrun.syntax.source.Diagnostic) riverrun.syntax.Place {
+        return b.tree.?.place(d.span);
+    }
+
     /// The one error there is, which must be this one.
     fn only(b: *const Built, line: u32, col: u32, message: []const u8) !void {
-        if (b.diags.errors() != 1) for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ d.span.line, d.span.col, d.message });
+        if (b.diags.errors() != 1) for (b.diags.list.items) |d| std.debug.print("{d}:{d}: {s}\n", .{ b.at(d).line, b.at(d).col, d.message });
         try std.testing.expectEqual(@as(usize, 1), b.diags.errors());
         for (b.diags.list.items) |d| if (d.severity == .err) {
             try std.testing.expectEqualStrings(message, d.message);
-            try std.testing.expectEqual(line, d.span.line);
-            try std.testing.expectEqual(col, d.span.col);
+            try std.testing.expectEqual(line, b.at(d).line);
+            try std.testing.expectEqual(col, b.at(d).col);
         };
         try std.testing.expect(b.compiled == null);
     }
@@ -54,6 +61,7 @@ pub fn build(text: []const u8) !Built {
     errdefer b.deinit();
     const tree = try b.arena.allocator().create(riverrun.syntax.ast.File);
     tree.* = try riverrun.syntax.parse(b.arena.allocator(), gpa, &b.diags, 0, "school.river", text);
+    b.tree = tree;
     b.checked = try check.run(gpa, &b.diags, tree[0..1], joined.options);
     if (b.diags.errors() == 0) b.compiled = try riverrun.compile.run(gpa, &b.diags, &b.checked.?, .{ .passes = joined.passes });
     return b;
@@ -67,7 +75,7 @@ fn replaced(text: []const u8, from: []const u8, to: []const u8) ![]u8 {
 test "a calendar in the story is compiled, loaded and kept: Sunday evening comes, and Ryuji asks" {
     var b = try build(school);
     defer b.deinit();
-    for (b.diags.list.items) |d| if (d.severity == .err) std.debug.print("{d}:{d}: {s}\n", .{ d.span.line, d.span.col, d.message });
+    for (b.diags.list.items) |d| if (d.severity == .err) std.debug.print("{d}:{d}: {s}\n", .{ b.at(d).line, b.at(d).col, d.message });
     try std.testing.expectEqual(@as(usize, 0), b.diags.errors());
     const s: runtime.story.Story = try .init(b.compiled.?.graph, .{});
     const words: runtime.story.Strings = try .init(b.compiled.?.words, .{});
@@ -151,7 +159,7 @@ test "a fact the calendar keeps is never the story's too" {
     var b = try build(text);
     defer b.deinit();
     try std.testing.expectEqualStrings("`weekday` is declared twice: first at school.river:7:3, then by the calendar `school`", b.diags.list.items[0].message);
-    try std.testing.expectEqual(@as(u32, 12), b.diags.list.items[0].span.line);
+    try std.testing.expectEqual(@as(u32, 12), b.at(b.diags.list.items[0]).line);
 }
 
 test "a schedule needs a calendar to mean" {

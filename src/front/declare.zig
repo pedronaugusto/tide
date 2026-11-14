@@ -28,7 +28,7 @@ pub fn declare(a: std.mem.Allocator, s: *const ast.Section, _: []const ast.File)
 }
 
 fn int(scope: ?[]const u8, name: ast.Name) Declared {
-    return .{ .scope = scope, .fact = .{ .name = name, .type = .int, .game = true } };
+    return .{ .scope = scope, .fact = .{ .span = name.span, .name = name, .type = .int, .game = true } };
 }
 
 // `place weekday · names monday, …`: one of the names, each written where the place is.
@@ -37,5 +37,5 @@ fn place(a: std.mem.Allocator, scope: ?[]const u8, t: *const ast.Tag, list: []co
     if (list.len == 0) return int(scope, name);
     const values = try a.alloc(ast.Name, list.len);
     for (values, list) |*v, n| v.* = .{ .text = n, .span = t.key.span };
-    return .{ .scope = scope, .fact = .{ .name = name, .type = .{ .one_of = values }, .game = true } };
+    return .{ .scope = scope, .fact = .{ .span = t.span, .name = name, .type = .{ .one_of = values }, .game = true } };
 }

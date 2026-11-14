@@ -266,16 +266,16 @@ test "an instant's words: counts, places by fact and by name" {
     defer arena.deinit();
     const a = arena.allocator();
     const unit = [_]ast.Tag{
-        .{ .key = .{ .text = "size", .span = .none }, .values = &.{"1"} },
-        .{ .key = .{ .text = "place", .span = .none }, .values = &.{"slot"} },
-        .{ .key = .{ .text = "names", .span = .none }, .values = &.{ "morning", "evening" } },
+        .{ .span = .none, .key = .{ .text = "size", .span = .none }, .values = &.{"1"} },
+        .{ .span = .none, .key = .{ .text = "place", .span = .none }, .values = &.{"slot"} },
+        .{ .span = .none, .key = .{ .text = "names", .span = .none }, .values = &.{ "morning", "evening" } },
     };
-    const day = [_]ast.Tag{ .{ .key = .{ .text = "size", .span = .none }, .values = &.{"2"} }, .{ .key = .{ .text = "count", .span = .none }, .values = &.{"day"} } };
+    const day = [_]ast.Tag{ .{ .span = .none, .key = .{ .text = "size", .span = .none }, .values = &.{"2"} }, .{ .span = .none, .key = .{ .text = "count", .span = .none }, .values = &.{"day"} } };
     const parts = [_]ast.Subsection{
-        .{ .name = .{ .text = "slot", .span = .none }, .when = null, .tags = &unit, .body = &.{} },
-        .{ .name = .{ .text = "day", .span = .none }, .when = null, .tags = &day, .body = &.{} },
+        .{ .span = .none, .name = .{ .text = "slot", .span = .none }, .when = null, .tags = &unit, .body = &.{} },
+        .{ .span = .none, .name = .{ .text = "day", .span = .none }, .when = null, .tags = &day, .body = &.{} },
     };
-    const s: ast.Section = .{ .name = .{ .text = "school", .span = .none }, .kind = .scene, .tags = &.{}, .body = &.{}, .subsections = &parts };
+    const s: ast.Section = .{ .span = .none, .name = .{ .text = "school", .span = .none }, .kind = .scene, .tags = &.{}, .body = &.{}, .subsections = &parts };
     const read = try instant(a, &s, &.{"day 3 evening"});
     try std.testing.expectEqual(@as(u64, 3), read.instant.count.?.n);
     try std.testing.expectEqual(@as(u64, 1), read.instant.places()[0].value);
