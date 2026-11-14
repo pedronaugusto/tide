@@ -3,11 +3,16 @@
 //! it. What a calendar declares, what tide's judges hold a tag to and what
 //! the reader works out all start here, so the three agree.
 //!
-//!     == school (calendar)    # clock turn · scope time
-//!     = slot       # size 1 · place slot · names morning, noon, afternoon, evening
-//!     = day        # size 4 · count day
-//!     = week       # cycle day · place weekday · names monday, …, sunday
-//!     = days_left  # until day 34 · per day
+//!     == school (calendar)
+//!       [clock turn] [scope time]
+//!     = slot
+//!       [size 1] [place slot] [names morning, noon, afternoon, evening]
+//!     = day
+//!       [size 4] [count day]
+//!     = week
+//!       [cycle day] [place weekday] [names monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+//!     = days_left
+//!       [until day 34] [per day]
 //!
 //! An instant is words: a count (`day 34`) and places, each a place fact
 //! and its value (`weekday sunday`) or a place's name alone where no other

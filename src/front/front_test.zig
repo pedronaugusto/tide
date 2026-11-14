@@ -122,12 +122,12 @@ test "a calendar in the story is compiled, loaded and kept: Sunday evening comes
 
 test "a time misnamed is refused by tide's judge, where its value is written" {
     const cases = .{
-        .{ "at sunday evening", "at sundy evening", 14, 59, "`sundy` is not a place or a count of `school`" },
-        .{ "at sunday evening", "at weekday evening", 14, 59, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
-        .{ "until day 34", "until day", 12, 17, "`day` takes its count: `day 34`" },
-        .{ "# every week ·", "# every fortnight ·", 14, 51, "`fortnight` is not a unit or a cycle of this calendar" },
-        .{ "# cycle day ·", "# cycle month ·", 11, 23, "`month` is not a unit of this calendar" },
-        .{ "# clock turn", "# clock day", 8, 51, "`day` is not a `(clock)` fact" },
+        .{ "at sunday evening", "at sundy evening", 20, 17, "`sundy` is not a place or a count of `school`" },
+        .{ "at sunday evening", "at weekday evening", 20, 17, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
+        .{ "until day 34", "until day", 17, 4, "`day` takes its count: `day 34`" },
+        .{ "[every week]", "[every fortnight]", 20, 10, "`fortnight` is not a unit or a cycle of this calendar" },
+        .{ "[cycle day]", "[cycle month]", 15, 10, "`month` is not a unit of this calendar" },
+        .{ "[clock turn]", "[clock day]", 9, 10, "`day` is not a `(clock)` fact" },
     };
     inline for (cases) |c| {
         const text = try replaced(school, c[0], c[1]);
@@ -140,9 +140,9 @@ test "a time misnamed is refused by tide's judge, where its value is written" {
 
 test "what only the whole calendar shows is said by tide's check, at its place" {
     const cases = .{
-        .{ "= day         # size 4", "= day         # size 5", 8, 4, "the calendar does not hold together: a unit's names are not one for each of its places in the next unit, or a cycle's for each of its length" },
-        .{ "= week        # cycle day · place", "= week        # cycle day · offset 9 · place", 8, 4, "the calendar does not hold together: a cycle is of length zero, or starts past its end" },
-        .{ "= days_left   # until day 34", "= days_left   # per day", 12, 3, "a calendar's part is a unit (`size`), a cycle (`cycle`) or a time fact it keeps (`until`, `since`, `drift`)" },
+        .{ "[size 4]", "[size 5]", 8, 4, "the calendar does not hold together: a unit's names are not one for each of its places in the next unit, or a cycle's for each of its length" },
+        .{ "[cycle day] [place", "[cycle day] [offset 9] [place", 8, 4, "the calendar does not hold together: a cycle is of length zero, or starts past its end" },
+        .{ "[until day 34]", "[per day]", 16, 3, "a calendar's part is a unit (`size`), a cycle (`cycle`) or a time fact it keeps (`until`, `since`, `drift`)" },
     };
     inline for (cases) |c| {
         const text = try replaced(school, c[0], c[1]);
@@ -159,11 +159,11 @@ test "a fact the calendar keeps is never the story's too" {
     var b = try build(text);
     defer b.deinit();
     try std.testing.expectEqualStrings("`weekday` is declared twice: first at school.river:7:3, then by the calendar `school`", b.diags.list.items[0].message);
-    try std.testing.expectEqual(@as(u32, 12), b.at(b.diags.list.items[0]).line);
+    try std.testing.expectEqual(@as(u32, 16), b.at(b.diags.list.items[0]).line);
 }
 
 test "a schedule needs a calendar to mean" {
-    var none = try build("== bus   # at day 3\n-> end\n");
+    var none = try build("== bus\n  [at day 3]\n-> end\n");
     defer none.deinit();
     try none.only(1, 4, "a schedule needs a calendar: the story declares none");
 }
@@ -172,9 +172,12 @@ test "a place without names is a number, kept in an int" {
     var b = try build(
         \\facts:
         \\  minutes: int   (clock)
-        \\== clock (calendar)   # clock minutes
-        \\= hour   # size 60 · place hour
-        \\= day    # size 24 · count day
+        \\== clock (calendar)
+        \\  [clock minutes]
+        \\= hour
+        \\  [size 60] [place hour]
+        \\= day
+        \\  [size 24] [count day]
         \\== late
         \\{ hour >= 22 } It is late.
         \\-> end

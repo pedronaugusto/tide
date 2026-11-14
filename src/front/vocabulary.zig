@@ -4,17 +4,24 @@
 //! parts are its units, its cycles and the time facts it keeps, and a
 //! schedule is tags on any section, part or pool candidate.
 //!
-//!     == school (calendar)                    # clock turn · scope time
-//!     = slot       # size 1 · place slot · names morning, noon, afternoon, evening
-//!     = day        # size 4 · count day
-//!     = week       # cycle day · place weekday · names monday, tuesday, wednesday, thursday, friday, saturday, sunday
-//!     = days_left  # until day 34 · per day
+//!     == school (calendar)
+//!       [clock turn] [scope time]
+//!     = slot
+//!       [size 1] [place slot] [names morning, noon, afternoon, evening]
+//!     = day
+//!       [size 4] [count day]
+//!     = week
+//!       [cycle day] [place weekday] [names monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+//!     = days_left
+//!       [until day 34] [per day]
 //!
-//!     == ramen                                # every week · at sunday evening · times 5
+//!     == ramen
+//!       [every week] [at sunday evening] [times 5]
+//!     -> end
 //!
 //! The calendar declares the facts it keeps (`slot`, `day`, `weekday`,
 //! `days_left`), which the story reads and never declares. A time is
-//! written in them (`at sunday evening`, `until day 34`), and tide's judges
+//! written in them (`[at sunday evening]`, `[until day 34]`), and tide's judges
 //! hold it to the calendar, so a typo fails with its file and line.
 
 const riverrun = @import("riverrun-compiler");

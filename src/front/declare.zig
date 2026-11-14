@@ -31,7 +31,7 @@ fn int(scope: ?[]const u8, name: ast.Name) Declared {
     return .{ .scope = scope, .fact = .{ .span = name.span, .name = name, .type = .int, .game = true } };
 }
 
-// `place weekday · names monday, …`: one of the names, each written where the place is.
+// `[place weekday] [names monday, …]`: one of the names, each written where the place is.
 fn place(a: std.mem.Allocator, scope: ?[]const u8, t: *const ast.Tag, list: []const []const u8) error{OutOfMemory}!Declared {
     const name: ast.Name = .{ .text = written.only(t), .span = t.key.span };
     if (list.len == 0) return int(scope, name);

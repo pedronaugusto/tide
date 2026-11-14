@@ -106,21 +106,28 @@ declares the facts it keeps, so the story reads them and never declares them.
 facts (time):
   turn:  int   (clock)
 
-== school (calendar)          # clock turn · scope time
-= slot        # size 1 · place slot · names morning, noon, afternoon, evening
-= day         # size 4 · count day
-= week        # cycle day · place weekday · names monday, tuesday, wednesday, thursday, friday, saturday, sunday
-= days_left   # until day 34 · per day
+== school (calendar)
+  [clock turn] [scope time]
+= slot
+  [size 1] [place slot] [names morning, noon, afternoon, evening]
+= day
+  [size 4] [count day]
+= week
+  [cycle day] [place weekday] [names monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+= days_left
+  [until day 34] [per day]
 
-== ramen                      # every week · at sunday evening · times 5
+== ramen
+  [every week] [at sunday evening] [times 5]
 { weekday = sunday and slot = evening } RYUJI: yo. ramen?
+-> end
 ```
 
-- **A calendar** (`# clock`, `# start`, `# scope`) reads a `(clock)` fact the story declares. A unit part has a
-  `size` (in the unit before, ticks for the first; several sizes repeat in turn), and may name the fact that holds
-  its place in the next unit (`place`), with the `names` of its places, and the int fact that counts it
-  (`count`). A cycle part goes round a unit (`cycle day · length 7 · offset`), its place a fact too; its `length`
-  may be left to its `names`.
+- **A calendar** (`[clock …]`, `[start …]`, `[scope …]` under its heading) reads a `(clock)` fact the story
+  declares. Each part's tags stand under its heading, a row of their own. A unit part has a `size` (in the unit
+  before, ticks for the first; several sizes repeat in turn), and may name the fact that holds its place in the next
+  unit (`place`), with the `names` of its places, and the int fact that counts it (`count`). A cycle part goes round
+  a unit (`[cycle day] [length 7] [offset 3]`), its place a fact too; its `length` may be left to its `names`.
 - **The calendar's facts are its own declarations** (riverrun's `Kind.declare`), the game's to write and tide's to
   keep, in the scope `scope` names: a place is a `one of` its names, or an int where it has none; a count and a
   time fact are ints. A story that declares one of them too is refused with both places.
@@ -133,7 +140,7 @@ facts (time):
   says which where a story has several, else the calendar its `at` names.
 - **Checked inside riverrun's check.** Each of tide's tags is judged where it stands (`Schema.Value.judge`): an
   instant against its calendar, `every` and `cycle` against its units, `clock` and `drift` against the story's
-  `(clock)` facts, so `at sundy evening` fails with its file and line. What only the whole shows (a calendar that
+  `(clock)` facts, so `[at sundy evening]` fails with its file and line. What only the whole shows (a calendar that
   does not hold together, a time it never reaches, a schedule with no calendar to mean) is tide's check, a pass of
   riverrun's checker. Both report through riverrun's diagnostics, so `addStory` prints them as riverrun's own; the
   compile pass meets none of them, and would refuse the story where it is written if it did.

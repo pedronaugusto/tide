@@ -5,12 +5,18 @@ cast:
 facts (time):
   turn:  int   (clock)
 
-== school (calendar)                      # clock turn · scope time
-= slot        # size 1 · place slot · names morning, noon, afternoon, evening
-= day         # size 4 · count day
-= week        # cycle day · place weekday · names monday, tuesday, wednesday, thursday, friday, saturday, sunday
-= days_left   # until day 34 · per day
+== school (calendar)
+  [clock turn] [scope time]
+= slot
+  [size 1] [place slot] [names morning, noon, afternoon, evening]
+= day
+  [size 4] [count day]
+= week
+  [cycle day] [place weekday] [names monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+= days_left
+  [until day 34] [per day]
 
-== ramen                                  # every week · at sunday evening · times 5
+== ramen
+  [every week] [at sunday evening] [times 5]
 { weekday = sunday and slot = evening } RYUJI: yo. ramen?
 -> end

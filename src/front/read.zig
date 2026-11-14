@@ -106,7 +106,7 @@ const Reader = struct {
         const s = r.checked.sections[id.raw()];
         if (r.cals.items.len == block.max_calendars) return r.problem(s.node.name.span, "a story holds at most {d} calendars", .{block.max_calendars});
         var c: Cal = .{ .section = id, .calendar = null, .out = .{ .section = id.raw(), .clock = 0, .start = 0, .units = &.{}, .cycles = &.{} } };
-        const clock = tagOf(s.node.tags, "clock") orelse return r.problem(s.node.name.span, "a calendar reads a clock: `# clock` and a `(clock)` fact", .{});
+        const clock = tagOf(s.node.tags, "clock") orelse return r.problem(s.node.name.span, "a calendar reads a clock: `[clock …]` and a `(clock)` fact", .{});
         c.out.clock = r.clockOf(s.module, only(clock)) orelse {
             r.refused = true;
             return;
