@@ -1,0 +1,3 @@
+// The game takes ramen off the calendar: Sunday evening comes, and nothing comes due.
+:cancel ramen
+:wait 27

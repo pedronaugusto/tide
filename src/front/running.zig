@@ -4,6 +4,12 @@
 //! moves (`:wait`) moved by tide, so the calendar's facts and the time facts
 //! follow it and every schedule that comes due on the way is told, in time
 //! order, with the section it carries for the play to tell then.
+//!
+//! Moving a clock is the play's own `:wait`, since a `(clock)` fact is
+//! riverrun's; tide moves it where it keeps it. The game's one other call
+//! into tide that changes what the story tells is offered as the play's
+//! command `:cancel SECTION`: the game's `cancelKey`, a scene the story
+//! schedules taken off the calendar, so it never comes due again.
 
 const std = @import("std");
 const river = @import("riverrun-compiler");
@@ -14,9 +20,34 @@ const facts = runtime.facts;
 const story = runtime.story;
 
 /// What `tide.package` runs as a story is played.
-pub const running: river.Running = .{ .name = "tide", .start = start, .stop = stop, .advance = advance };
+pub const running: river.Running = .{ .name = "tide", .start = start, .stop = stop, .advance = advance, .commands = &.{
+    .{ .name = "cancel", .object = "scene", .help = "the game takes a scene the story schedules off the calendar: it comes due no more", .forms = scheduled, .run = cancel },
+} };
 
 const State = struct { tide: tide.Tide, story: *const story.Story };
+
+// The sections the story schedules, each once, in the order the story's block lists them.
+fn scheduled(state: *anyopaque, a: std.mem.Allocator) error{OutOfMemory}![]const river.Running.Form {
+    const st: *State = @ptrCast(@alignCast(state));
+    const found = st.story.block(tide.block.name) orelse return &.{};
+    // the block was read once already, when the time was loaded
+    const plan = tide.block.read(a, found.bytes) catch return &.{};
+    var out: std.ArrayList(river.Running.Form) = .empty;
+    outer: for (plan.schedules) |p| {
+        const name = st.story.section(.fromRaw(p.section)).name;
+        for (out.items) |f| if (std.mem.eql(u8, f.object, name)) continue :outer;
+        try out.append(a, .{ .object = name });
+    }
+    return out.items;
+}
+
+fn cancel(state: *anyopaque, form: usize, _: []const facts.Value, told: *river.Running.Told) error{ OutOfMemory, Refused, Stopped }!void {
+    const st: *State = @ptrCast(@alignCast(state));
+    const name = (try scheduled(state, told.arena))[form].object;
+    const section = st.story.sectionNamed(name).?;
+    if (st.tide.cancelKey(section.raw()) == 0) return told.refuse("`{s}` is on the calendar no more: it came due for the last time, or was cancelled", .{name});
+    try told.say(.{ .what = "cancelled", .name = name });
+}
 
 fn start(gpa: std.mem.Allocator, game: river.Running.Game, told: *river.Running.Told) error{ OutOfMemory, Stopped }!?*anyopaque {
     if (game.story.block(tide.block.name) == null) return null;

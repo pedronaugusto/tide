@@ -97,6 +97,19 @@ const school_played =
     \\
 ;
 
+/// What `riverrun play` writes for `tools/testdata/cancelled.play`: ramen taken off the calendar.
+const cancelled_played =
+    \\== ramen
+    \\  [every week] [at sunday evening] [times 5]
+    \\-> end
+    \\> :cancel ramen
+    \\! cancelled ramen
+    \\> :wait 27
+    \\> :cancel ramen
+    \\riverrun: error: the input `:cancel ramen`: `ramen` is on the calendar no more: it came due for the last time, or was cancelled
+    \\
+;
+
 fn docs(b: *std.Build, test_step: *std.Build.Step) ?void {
     const package = b.dependency("tide", riverrun.building(b));
     const river = b.dependency("riverrun", riverrun.building(b));
@@ -114,6 +127,17 @@ fn docs(b: *std.Build, test_step: *std.Build.Step) ?void {
     played.expectExitCode(0);
     played.expectStdOutEqual(school_played);
     test_step.dependOn(&played.step);
+    // the game's other call into tide, as the play's command: a scene taken off the calendar
+    const cancelled = b.addRunArtifact(program);
+    cancelled.addArgs(&.{ "play", "--script" });
+    cancelled.addFileArg2(package.path("tools/testdata/cancelled.play"), .{});
+    cancelled.addFileArg2(package.path("src/front/testdata/school.river"), .{});
+    // cancelled again: refused, in words
+    cancelled.addArgs(&.{ "--input", ":cancel ramen" });
+    cancelled.setStdIn(.{ .bytes = "" });
+    cancelled.expectExitCode(1);
+    cancelled.expectStdOutEqual(cancelled_played);
+    test_step.dependOn(&cancelled.step);
     const excerpts = riverrun.addExcerptsTest(b, river, .{ .package = package.builder, .stories = &documented.stories, .documents = &documented.documents }) orelse return null;
     test_step.dependOn(&b.addRunArtifact(excerpts).step);
 }

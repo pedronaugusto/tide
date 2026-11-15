@@ -174,7 +174,17 @@ any block cut short, too long, with a count past its bound or an unknown tag; it
 (`:wait 27`, or `--wait 27` from the start) with `advance` and the clock tide keeps for that fact (`clockOf`). Each
 schedule that came due on the way is told in time order, `! due ramen` with when (`at turn 27`), and the play tells
 its section then, as an interruption of the flow, or anew where the story had ended. A clock tide does not keep is
-moved by the play itself.
+moved by the play itself. Moving a clock is the play's own `:wait`, not a command of tide's: a `(clock)` fact is
+riverrun's, so a story with no calendar moves its clocks the same way, and where tide keeps the clock the play calls
+tide to move it, as the game does.
+
+The game's other call into tide that changes what a story tells is offered as the play's command `:cancel SCENE`:
+`cancelKey` of a section the story schedules, so it never comes due again (`! cancelled ramen`; refused once it
+came due for the last time, or was cancelled). The rest is the game's to call and a play has no use for: `elapse`,
+`setRate` and `pause` turn the game's own elapsed time into ticks, and a play moves a clock by ticks; `at`, `after`
+and `every` schedule with a key of the game's own, and what comes due for one is the game's mechanic, which the
+story reaches through an action the play tells; snapshots are going back, which is the play's `:back`; the reads
+(`now`, `moment`, `derive`) are the facts the story reads already.
 
 Built.
 
