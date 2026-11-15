@@ -1,6 +1,6 @@
 //! tide's judges: each tag tide defines held to the calendar it is
 //! written against, and refused in tide's words where its value is
-//! written, or at the tag for an instant of several words. A calendar's
+//! written, over all its words for an instant of several. A calendar's
 //! own tags are judged against it; a schedule's against the calendar it
 //! means, and where it means none, or several, tide's check says so once.
 
@@ -55,10 +55,11 @@ pub fn at(c: *Checker, t: Tagged) Error!void {
     try words(c, t, c.sections.items[i].node);
 }
 
+// An instant's words, refused over all of them: the writer's time is what is wrong, not the key.
 fn words(c: *Checker, t: Tagged, s: *const riverrun.syntax.ast.Section) Error!void {
     switch (try written.instant(c.arena, s, t.tag.values)) {
         .instant => {},
-        .problem => |p| try c.err(t.tag.key.span, "{s}", .{p}),
+        .problem => |p| try c.err(if (t.tag.values.len == 0) t.tag.key.span else t.tag.at(0).join(t.tag.at(t.tag.values.len - 1)), "{s}", .{p}),
     }
 }
 

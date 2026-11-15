@@ -140,9 +140,9 @@ test "a calendar in the story is compiled, loaded and kept: Sunday evening comes
 
 test "a time misnamed is refused by tide's judge, where its value is written" {
     const cases = .{
-        .{ "at sunday evening", "at sundy evening", 20, 17, "`sundy` is not a place or a count of `school`" },
-        .{ "at sunday evening", "at weekday evening", 20, 17, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
-        .{ "until day 34", "until day", 17, 4, "`day` takes its count: `day 34`" },
+        .{ "at sunday evening", "at sundy evening", 20, 20, "`sundy` is not a place or a count of `school`" },
+        .{ "at sunday evening", "at weekday evening", 20, 20, "`weekday` is one of monday, tuesday, wednesday, thursday, friday, saturday, sunday: `evening` is not one" },
+        .{ "until day 34", "until day", 17, 10, "`day` takes its count: `day 34`" },
         .{ "[every week]", "[every fortnight]", 20, 10, "`fortnight` is not a unit or a cycle of this calendar" },
         .{ "[cycle day]", "[cycle month]", 15, 10, "`month` is not a unit of this calendar" },
         .{ "[clock turn]", "[clock day]", 9, 10, "`day` is not a `(clock)` fact" },
@@ -178,6 +178,8 @@ test "a fact the calendar keeps is never the story's too" {
     defer b.deinit();
     try std.testing.expectEqualStrings("`weekday` is declared twice: first at school.river:7:3, then by the calendar `school`", b.diags.list.items[0].message);
     try std.testing.expectEqual(@as(u32, 16), b.at(b.diags.list.items[0]).line);
+    // at the fact's name in `[place weekday]`, where the calendar declares it
+    try std.testing.expectEqual(@as(u32, 22), b.at(b.diags.list.items[0]).col);
 }
 
 test "a schedule needs a calendar to mean" {

@@ -80,7 +80,7 @@ fn advance(state: *anyopaque, clock: facts.FactId, by: u64, told: *river.Running
         for (moved.due) |d| {
             const section: story.SectionId = .fromRaw(std.math.cast(u32, d.key) orelse return told.stop("a schedule came due for no section of the story", .{}));
             const when = if (d.count > 1)
-                try told.arena.print("at {s} {d}, for {d} times", .{ name, d.at, d.count })
+                try told.arena.print("{d} times from {s} {d}, told as one", .{ d.count, name, d.at })
             else
                 try told.arena.print("at {s} {d}", .{ name, d.at });
             try told.say(.{ .what = "due", .name = st.story.section(section).name, .words = &.{when}, .section = section });
