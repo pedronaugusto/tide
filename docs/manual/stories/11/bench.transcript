@@ -1,0 +1,16 @@
+== landing
+The landing is dark, and the boat tied up under the lantern.
+ADA: 4 days to the fair.
+* 1 Sit on the bench.
+* 2 Go home.
+> 1
+You sit, and the river goes by.
+* 1 Sit on the bench.
+* 2 Go home.
+> :wait 18
+! due last_ferry
+  at hour 18
+== last_ferry
+  [every day] [at evening] [policy once]
+ADA: Last ferry over! Last one tonight!
+-> end

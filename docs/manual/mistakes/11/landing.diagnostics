@@ -1,0 +1,3 @@
+landing.river:15:19-15:22: error: `day` is declared twice: first at landing.river:8:3, then by the calendar `hollin`
+landing.river:35:10-35:19: error: `fortnight` is not a unit or a cycle of this calendar
+landing.river:40:20-40:35: error: `satuday` is not a place or a count of `hollin`

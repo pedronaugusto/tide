@@ -1,0 +1,48 @@
+// The landing at Hollin by the clock: Ada's last ferry every evening, the market boat on Saturdays, the fair.
+cast:
+  ada    "Ada"    — keeps the ferry
+extras: a boatman
+
+facts (world):
+  hour: int   (clock)          // the game's clock: an hour a tick
+  day: int   (game)            // which day it is
+
+== hollin (calendar)
+  [clock hour] [scope world]
+= watch
+  [size 6] [place part] [names night, morning, afternoon, evening]
+= day
+  [size 4] [count day]
+= week
+  [cycle day] [place weekday] [names monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+= days_to_fair
+  [until day 4] [per day]
+
+== landing
+{ part = night }
+  The landing is dark, and the boat tied up under the lantern.
+{ else }
+  Ada is mending a rope on the landing.
+{ days_to_fair > 0 } ADA: {days_to_fair as one: One day | other: {days_to_fair} days} to the fair.
+- (bench)
++ Sit on the bench.
+  You sit, and the river goes by.
+  -> bench
+* Go home.
+  -> end
+
+== last_ferry
+  [every fortnight] [at evening] [policy once]
+ADA: Last ferry over! Last one tonight!
+-> end
+
+== market_boat
+  [every week] [at satuday morning]
+The market boat comes down from the mill, low in the water.
+A BOATMAN: Flour for the fair!
+-> end
+
+== fair
+  [at day 4 morning]
+Across the river, the fair's flags go up.
+-> end

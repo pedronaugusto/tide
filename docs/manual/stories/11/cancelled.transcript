@@ -1,0 +1,12 @@
+== landing
+The landing is dark, and the boat tied up under the lantern.
+ADA: 4 days to the fair.
+* 1 Sit on the bench.
+* 2 Go home.
+> 2
+-> end
+> :cancel last_ferry
+! cancelled last_ferry
+> :wait 24
+> :cancel last_ferry
+riverrun: error: the input `:cancel last_ferry`: `last_ferry` is on the calendar no more: it came due for the last time, or was cancelled

@@ -1,0 +1,52 @@
+== landing
+The landing is dark, and the boat tied up under the lantern.
+ADA: 4 days to the fair.
+* 1 Sit on the bench.
+* 2 Go home.
+> 2
+-> end
+> :wait 18
+! due last_ferry
+  at hour 18
+== last_ferry
+  [every day] [at evening] [policy once]
+ADA: Last ferry over! Last one tonight!
+-> end
+> :wait 72
+! due last_ferry
+  3 times from hour 42, told as one
+ADA: Last ferry over! Last one tonight!
+-> end
+> :facts
+  hour = 90
+  part = evening
+  day = 3
+  weekday = thursday
+  days_to_fair = 1
+> :wait 12
+! due fair
+  at hour 102
+== fair
+  [at day 4 morning]
+Across the river, the fair's flags go up.
+-> end
+> :wait 12 hour
+! due last_ferry
+  at hour 114
+== last_ferry
+  [every day] [at evening] [policy once]
+ADA: Last ferry over! Last one tonight!
+-> end
+> :wait 12
+! due market_boat
+  at hour 126
+== market_boat
+  [every week] [at saturday morning]
+The market boat comes down from the mill, low in the water.
+A BOATMAN: Flour for the fair!
+-> end
+> :facts
+  hour = 126
+  part = morning
+  day = 5
+  weekday = saturday

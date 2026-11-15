@@ -1,0 +1,13 @@
+> :wait 6
+== landing
+Ada is mending a rope on the landing.
+ADA: 4 days to the fair.
+* 1 Sit on the bench.
+* 2 Go home.
+> :facts
+  hour = 6
+  part = morning
+  weekday = monday
+  days_to_fair = 4
+> 2
+-> end

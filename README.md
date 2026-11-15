@@ -19,6 +19,9 @@ tide keeps a game's time: its clocks, its calendars and what is scheduled, as ri
   by tide, the calendar's facts follow it, and each schedule that comes due on the way is told and its scene
   played.
 
+The design is [docs/design.md](docs/design.md). A writer learns time from riverrun's manual, whose chapter on it is
+tide's: [docs/manual/11-time.md](docs/manual/11-time.md).
+
 ## Install
 
 Requires Zig 0.17. Fetch with `zig fetch --save git+https://github.com/pedronaugusto/tide`. The runtime is the
@@ -34,8 +37,9 @@ bus; a clock moves only when the host advances it, and never backwards.
 ## Testing
 
 `bay test` runs the unit suite: clocks, rates, calendars, schedules and snapshots; the `.river` front end on stories
-compiled through riverrun's `addStory`; and properties of the compiled block (a plan written reads back as itself,
-and any bytes read to a plan or are refused, a block whole or not at all).
+compiled through riverrun's `addStory`; properties of the compiled block (a plan written reads back as itself,
+and any bytes read to a plan or are refused, a block whole or not at all); and the manual's chapter, its stories
+checked and every run it shows pinned (`bay dev manual-test` alone).
 
 ## Stability
 

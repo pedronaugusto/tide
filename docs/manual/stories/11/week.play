@@ -1,0 +1,12 @@
+// Home from the landing on Monday night; the game moves the clock on, and the week goes by.
+2
+// to Monday evening, and Ada's last crossing
+:wait 18
+// three evenings more, in one move
+:wait 72
+:facts
+// Friday morning, and the fair; Friday evening; Saturday morning, and the market boat
+:wait 12
+:wait 12 hour
+:wait 12
+:facts
