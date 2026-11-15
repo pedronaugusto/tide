@@ -1,6 +1,6 @@
 // The landing at Hollin by the clock: Ada's last ferry every evening, the market boat on Saturdays, the fair.
 cast:
-  ada    "Ada"    — keeps the ferry
+  ada    "Ada"    keeps the ferry
 extras: a boatman
 
 facts (world):

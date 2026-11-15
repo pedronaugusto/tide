@@ -76,8 +76,6 @@ const school_played =
     \\  [every week] [at sunday evening] [times 5]
     \\-> end
     \\> :facts
-    \\  slot = morning
-    \\  weekday = monday
     \\  days_left = 34
     \\> :wait 27
     \\! due ramen

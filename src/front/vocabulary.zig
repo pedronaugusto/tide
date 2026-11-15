@@ -67,9 +67,10 @@ pub const kind: riverrun.check.Kind = .{ .name = "calendar", .schema = &calendar
 
 /// A schedule's tags, on any section or part: one time (`at`) or a recurrence (`every`, from `at` where it is
 /// given), how many times, what a jump does with the times it passes, and the calendar where a story has several.
+/// A section scheduled so comes due into a running flow, as an interruption: `<-` goes back to where the flow was.
 pub const keys = [_]Key{
-    .{ .name = "at", .on = anywhere, .value = .{ .judge = judge.at }, .count = .many },
-    .{ .name = "every", .on = anywhere, .value = .{ .judge = judge.every } },
+    .{ .name = "at", .on = anywhere, .value = .{ .judge = judge.at }, .count = .many, .interrupts = true },
+    .{ .name = "every", .on = anywhere, .value = .{ .judge = judge.every }, .interrupts = true },
     .{ .name = "interval", .on = anywhere, .value = .number },
     .{ .name = "times", .on = anywhere, .value = .number },
     .{ .name = "policy", .on = anywhere, .value = .{ .words = &.{ "each", "once" } } },

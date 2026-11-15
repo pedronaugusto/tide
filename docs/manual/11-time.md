@@ -117,7 +117,6 @@ ADA: 4 days to the fair.
 > :facts
   hour = 6
   part = morning
-  weekday = monday
   days_to_fair = 4
 > 2
 -> end
@@ -183,7 +182,10 @@ ADA: Last ferry over! Last one tonight!
 ```
 
 `! due last_ferry` says what came due and at what tick. Ada's call ends with `-> end`, so the evening at the landing
-ends with it. Where the story has ended already, a scene that comes due is told anew, as below.
+ends with it. A scene that should hand the flow back to where it came in ends with `<-` instead: the game runs a
+scheduled scene into the flow as an interruption, so `<-` goes back there, and the checker knows it. Scenes due in
+one move are told in turn, each when the one before goes back, and one that ends the story leaves the others to be
+told. Where the story has ended already, a scene that comes due is told anew, as below.
 
 ## Taking a scene off the calendar
 

@@ -7,7 +7,6 @@ ADA: 4 days to the fair.
 > :facts
   hour = 6
   part = morning
-  weekday = monday
   days_to_fair = 4
 > 2
 -> end
