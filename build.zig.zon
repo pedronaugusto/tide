@@ -6,12 +6,12 @@
     .paths = .{ "build.zig", "build.zig.zon", "src", "README.md", "LICENSE" },
     .dependencies = .{
         .aegis = .{
-            .url = "git+https://github.com/pedronaugusto/aegis#dc3ed602f9c18b4473e9c649d1b1f36403603018",
-            .hash = "aegis-0.2.4-rsxouheoDQB7ckAmyiNbPdOdlqJnN1Sj56bM7_iPKhpY",
+            .url = "git+https://github.com/pedronaugusto/aegis#f52eabef3ec6534c3a74bea3a3b7d95a91ce2581",
+            .hash = "aegis-0.2.4-rsxouoquDQApwYDuGdd2YyEeTeNp6CnJoOZKdVCfc3jt",
         },
         .riverrun = .{
-            .url = "git+https://github.com/pedronaugusto/riverrun#9f5e2a9ab87b1a0a26dba3e9797635ad558fc524",
-            .hash = "riverrun-0.0.0-6jhPc8zWFABgYrlv6R08IjMvI2Z3UUwSPGhrhSxa40ia",
+            .url = "git+https://github.com/pedronaugusto/riverrun#ebb07467d87be88e922d973f53783552233ee5f8",
+            .hash = "riverrun-0.0.0-6jhPc57iFABzTKSENrIOudJw_axaWYswM8w8LMxaFgda",
         },
     },
     .dev_dependencies = .{
