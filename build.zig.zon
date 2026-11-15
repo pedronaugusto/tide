@@ -10,8 +10,8 @@
             .hash = "aegis-0.2.4-rsxouheoDQB7ckAmyiNbPdOdlqJnN1Sj56bM7_iPKhpY",
         },
         .riverrun = .{
-            .url = "git+https://github.com/pedronaugusto/riverrun#cd2c65edc18651e849335bd11a5f1f8f14e6994b",
-            .hash = "riverrun-0.0.0-6jhPc8KlEwCEsjWCRxPlkpkQo3pMiQgbrsUfnNlslE0Q",
+            .url = "git+https://github.com/pedronaugusto/riverrun#528d91d0b726446e2313ebba79eac5999264d7b9",
+            .hash = "riverrun-0.0.0-6jhPc4_tEwCkR-zXzcwdL6ytIZsAZTmp3puGWQnEvV-5",
         },
     },
     .dev_dependencies = .{
