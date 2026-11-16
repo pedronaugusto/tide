@@ -247,7 +247,7 @@ fn apply(t: *Tide, saved: Saved) Error!Report {
             report.dropped_schedules += 1;
             continue;
         };
-        const due = dueOf(t, clock, what) orelse {
+        const due = dueOf(t, what) orelse {
             report.dropped_schedules += 1;
             continue;
         };
@@ -276,14 +276,12 @@ fn remap(t: *const Tide, what: @FieldType(Tide.Slot, "what"), names: []const []c
     return out;
 }
 
-fn dueOf(t: *const Tide, clock: Tide.ClockId, what: @FieldType(Tide.Slot, "what")) ?u64 {
+fn dueOf(t: *const Tide, what: @FieldType(Tide.Slot, "what")) ?u64 {
     return switch (what) {
         .instant => |at| at,
         .recurrence => |rec| blk: {
             if (rec.r.every == .ticks and rec.r.every.ticks == 0) break :blk null;
-            const cal: ?*const @import("calendar.zig").Calendar = if (rec.r.every == .units) &t.calendars[rec.r.every.units.calendar].calendar else null;
-            _ = clock;
-            break :blk rec.r.occurrence(rec.next, cal);
+            break :blk rec.r.occurrence(rec.next, t.calendarFor(rec.r));
         },
     };
 }

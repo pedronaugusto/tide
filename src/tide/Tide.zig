@@ -365,7 +365,15 @@ fn calendarOf(t: *const Tide, clock: ClockId, r: Recurrence) Error!?*const Calen
     if (r.every != .units) return null;
     const id = r.every.units.calendar;
     if (id >= t.calendars.len or !t.calendars[id].clock.eql(clock)) return error.BadRecurrence;
-    return &t.calendars[id].calendar;
+    return t.calendarFor(r);
+}
+
+/// The calendar a held recurrence counts in, null for one in ticks. Scheduling (`every`) and restoring check the
+/// calendar a recurrence names, and calendars live as long as tide, so a held recurrence's calendar is there.
+pub fn calendarFor(t: *const Tide, r: Recurrence) ?*const Calendar {
+    if (r.every != .units) return null;
+    aegis.assert.invariant(r.every.units.calendar < t.calendars.len, "a held recurrence names one of tide's calendars: checked when scheduled or restored");
+    return &t.calendars[r.every.units.calendar].calendar;
 }
 
 /// Takes a free slot for a schedule due at `due`, in the order `next_order` gives.
@@ -449,8 +457,7 @@ fn pop(t: *Tide, clock: ClockId, target: u64) Due {
             return due;
         },
         .recurrence => |*rec| {
-            // glint-ignore: Z026 -- a recurrence's calendar was checked when it was scheduled
-            const cal = t.calendarOf(clock, rec.r) catch unreachable;
+            const cal = t.calendarFor(rec.r);
             const count = if (rec.r.policy == .once) @max(1, rec.r.upTo(rec.next, target, cal)) else 1;
             rec.next += count;
             const done = if (rec.r.times) |n| rec.next >= n else false;
