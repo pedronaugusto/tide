@@ -263,6 +263,14 @@ const Reader = struct {
         if (every) |t| s.every = r.everyOf(ci, tags, t) orelse return;
         if (tagOf(tags, "times")) |t| s.times = number(only(t));
         if (tagOf(tags, "policy")) |t| s.policy = if (std.mem.eql(u8, only(t), "once")) .once else .each;
+        if (s.every) |e| {
+            const cal = if (r.cals.items[ci].calendar) |*c| c else return; // a calendar that does not hold together said why
+            _ = tide.schedule.firstDue(.{ .first = s.first, .every = e, .times = s.times, .policy = s.policy }, cal) catch |err| return r.problem(span, "{s}", .{switch (err) {
+                error.NoStep => "a schedule's step moves time: give `interval` at least 1",
+                error.NoTimes => "`times 0` never comes due: give at least 1, or leave `times` out for ever",
+                error.PastTheClock => "this schedule first comes due past what a clock counts",
+            }});
+        }
         try r.schedules.append(r.a, s);
         try r.targets.append(r.a, target);
     }

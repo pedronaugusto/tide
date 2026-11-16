@@ -182,6 +182,20 @@ test "a fact the calendar keeps is never the story's too" {
     try std.testing.expectEqual(@as(u32, 22), b.at(b.diags.list.items[0]).col);
 }
 
+test "a schedule tide's runtime would refuse is refused by the checker, by the runtime's own rule" {
+    const cases = .{
+        .{ "[times 5]", "[times 0]", 19, 4, "`times 0` never comes due: give at least 1, or leave `times` out for ever" },
+        .{ "[times 5]", "[times 5] [interval 0]", 19, 4, "a schedule's step moves time: give `interval` at least 1" },
+    };
+    inline for (cases) |c| {
+        const text = try replaced(school, c[0], c[1]);
+        defer gpa.free(text);
+        var b = try build(text);
+        defer b.deinit();
+        try b.only(c[2], c[3], c[4]);
+    }
+}
+
 test "a schedule needs a calendar to mean" {
     var none = try build("== bus\n  [at day 3]\n-> end\n");
     defer none.deinit();
@@ -316,6 +330,8 @@ test "any text through riverrun's reader, checker and compiler with tide registe
         .seed = 0x71de,
         // the property reaches the compiler and the runtime, not only the reader's refusals
         .reach = &.{ "compiled", "told a line" },
+        // `[times 0]` compiled, then refused by the runtime: the checker now holds schedules to the runtime's rule
+        .regressions = &.{"1:0:0:258:1e"},
     });
 }
 

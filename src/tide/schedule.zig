@@ -81,6 +81,28 @@ pub fn valid(r: Recurrence, cal: ?*const Calendar) bool {
     };
 }
 
+/// The furthest a clock counts: a clock fact is a riverrun int.
+pub const max_tick: u64 = std.math.maxInt(i64);
+
+/// Why tide takes no recurrence of a shape.
+pub const Refused = error{
+    /// A step that moves no time, or a unit its calendar does not have.
+    NoStep,
+    /// It is to come due no times.
+    NoTimes,
+    /// Its first occurrence is past what a clock counts.
+    PastTheClock,
+};
+
+/// The tick a recurrence first comes due, or why tide refuses it: the one rule `Tide.every` keeps and a story's
+/// checker holds the story's schedules to, so a compiled story never asks for what the runtime refuses.
+pub fn firstDue(r: Recurrence, cal: ?*const Calendar) Refused!u64 {
+    if (!valid(r, cal)) return error.NoStep;
+    if (r.times) |n| if (n == 0) return error.NoTimes;
+    if (r.first > max_tick) return error.PastTheClock;
+    return r.occurrence(0, cal) orelse error.PastTheClock;
+}
+
 // ---------------------------------------------------------------- tests
 
 const calendar = @import("calendar.zig");

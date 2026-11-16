@@ -29,7 +29,7 @@ pub const max_derived = 256;
 /// The most schedules tide holds at once.
 pub const max_room = 1 << 20;
 /// The furthest a clock counts: a clock fact is a riverrun int.
-pub const max_tick: u64 = std.math.maxInt(i64);
+pub const max_tick = schedule.max_tick;
 
 pub const ClockId = aegis.id.Id(enum { clock }, u8);
 pub const CalendarId = aegis.id.Id(enum { calendar }, u8);
@@ -355,9 +355,7 @@ pub fn after(t: *Tide, clock: ClockId, ticks: u64, key: u64) Error!Token {
 pub fn every(t: *Tide, clock: ClockId, r: Recurrence, key: u64) Error!Token {
     try t.clockOk(clock);
     const cal = try t.calendarOf(clock, r);
-    if (!schedule.valid(r, cal) or r.first > max_tick) return error.BadRecurrence;
-    const first = r.occurrence(0, cal) orelse return error.BadRecurrence;
-    if (r.times != null and r.times.? == 0) return error.BadRecurrence;
+    const first = schedule.firstDue(r, cal) catch return error.BadRecurrence;
     return t.take(clock, key, .{ .recurrence = .{ .r = r, .next = 0 } }, first);
 }
 
